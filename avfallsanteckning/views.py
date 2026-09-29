@@ -21,7 +21,7 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-from . import db, installningar, pdf
+from . import db, installningar, orgnr, pdf
 from .arbetsdagar import rapportera_senast
 from .texter import GRUND, ROLL_HJALP, ROLLER, STATUS, TRANSPORTSATT
 from .tid import idag, stampel
@@ -267,8 +267,8 @@ def _las_formular(roll, form, conn):
     data["fran_cfar"] = stalle["cfar"] if stalle else ""
     if fran_kommun and not data["fran_kommunkod"]:
         fel.append(f"Okänd kommun: {fran_kommun}.")
-    namn, orgnr, adress, kommunkod = _part(form, "mottagare", conn)
-    data["mottagare_namn"], data["mottagare_orgnr"] = namn, orgnr
+    namn, onr, adress, kommunkod = _part(form, "mottagare", conn)
+    data["mottagare_namn"], data["mottagare_orgnr"] = namn, onr
     data["till_adress"] = text["till_adress"] or adress
     data["till_kommunkod"] = kommuner.kod(till_kommun) or kommunkod
     if till_kommun and not kommuner.kod(till_kommun):
@@ -278,8 +278,8 @@ def _las_formular(roll, form, conn):
     if not data["till_adress"]:
         fel.append("Ange platsen där avfallet ska hanteras.")
     if roll == "producent":
-        namn, orgnr, _, _ = _part(form, "transportor", conn)
-        data["transportor_namn"], data["transportor_orgnr"] = namn, orgnr
+        namn, onr, _, _ = _part(form, "transportor", conn)
+        data["transportor_namn"], data["transportor_orgnr"] = namn, onr
         data["lamnare_namn"], data["lamnare_orgnr"] = v["namn"], v["orgnr"]
         if stalle:
             data["fran_adress"] = stalle["adress"]
@@ -296,6 +296,12 @@ def _las_formular(roll, form, conn):
             fel.append("Ange kommunen där avfallet hämtades.")
         if data["farligt"] and grunder and not klassgrund:
             fel.append("Ange minst en grund för att avfallet bedömts som farligt.")
+    # numren från formuläret kontrolleras, verksamhetens eget är redan kontrollerat i inställningarna
+    for k in ("lamnare_orgnr", "transportor_orgnr", "mottagare_orgnr"):
+        if data[k] and orgnr.giltigt(data[k]):
+            data[k] = orgnr.formatera(data[k])
+        elif data[k] and k in form:
+            fel.append(f"Ogiltigt org.nr: {data[k]}.")
     return data, fel
 
 
@@ -482,7 +488,10 @@ def parter():
             flash("Ange namn på parten.", "fel")
         elif kommun and not data["kommunkod"]:
             flash(f"Okänd kommun: {kommun}.", "fel")
+        elif data["orgnr"] and not orgnr.giltigt(data["orgnr"]):
+            flash(f"Ogiltigt org.nr: {data['orgnr']}.", "fel")
         else:
+            data["orgnr"] = orgnr.formatera(data["orgnr"]) if data["orgnr"] else ""
             pid = f.get("id", "")
             db.spara_part(conn, int(pid) if pid.isdigit() else None, data)
             flash(f"{data['namn']} sparad.")

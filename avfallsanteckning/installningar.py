@@ -1,6 +1,6 @@
 import re
 
-from . import db
+from . import db, orgnr
 
 STANDARD = {
     "verksamhet": {
@@ -46,6 +46,10 @@ def tolka(form, kommuner, koder):
     v = {k: form.get(k, "").strip() for k in STANDARD["verksamhet"]}
     if not v["namn"]:
         fel.append("Ange verksamhetens namn.")
+    if v["orgnr"] and not orgnr.giltigt(v["orgnr"]):
+        fel.append(f"Ogiltigt org.nr: {v['orgnr']}.")
+    elif v["orgnr"]:
+        v["orgnr"] = orgnr.formatera(v["orgnr"])
     if v["kommun"] and not kommuner.kod(v["kommun"]):
         fel.append(f"Okänd kommun: {v['kommun']}.")
     favoriter = []

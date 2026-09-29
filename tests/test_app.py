@@ -11,7 +11,7 @@ from avfallsanteckning import create_app
 
 INSTALLNINGAR = {
     "namn": "Testbolaget AB",
-    "orgnr": "556000-0000",
+    "orgnr": "556000-0001",
     "adress": "Testvägen 1",
     "postnummer": "117 55",
     "ort": "Stockholm",
@@ -39,9 +39,9 @@ PRODUCENT = {
     "fran_adress": "Testvägen 1, 117 55 Stockholm",
     "fran_kommun": "Stockholm",
     "transportor_namn": "Transport AB",
-    "transportor_orgnr": "556111-1111",
+    "transportor_orgnr": "556111-1112",
     "mottagare_namn": "Mottagning AB",
-    "mottagare_orgnr": "556222-2222",
+    "mottagare_orgnr": "556222-2223",
     "till_adress": "Deponivägen 9, 136 50 Jordbro",
     "till_kommun": "Haninge",
     "referens": "Order 4711",
@@ -59,7 +59,7 @@ TRANSPORTOR = {
     "fran_kommun": "Botkyrka",
     "klassgrund": ["Spill av olja eller kemikalier", "Osäker bedömning, hanteras som farligt"],
     "mottagare_namn": "Mottagning AB",
-    "mottagare_orgnr": "556222-2222",
+    "mottagare_orgnr": "556222-2223",
     "till_adress": "Deponivägen 9, 136 50 Jordbro",
     "fordon": "ABC 123",
     "forare": "Bo",
@@ -126,6 +126,15 @@ class FormularTest(AppCase):
         self.assertEqual(svar.status_code, 200)
         self.assertIn("Välj en avfallskod", text)
         self.assertIn("Ange vikt", text)
+
+    def test_orgnr_kontrolleras(self):
+        svar = self.klient.post("/ny/producent", data={**PRODUCENT, "transportor_orgnr": "556111-1111"})
+        self.assertIn("Ogiltigt org.nr: 556111-1111", svar.data.decode())
+        aid = self.skapa("producent", {**PRODUCENT, "transportor_orgnr": "5561111112", "mottagare_orgnr": ""})
+        text = self.klient.get(f"/anteckning/{aid}").data.decode()
+        self.assertIn("556111-1112", text)
+        svar = self.klient.post("/ny/transportor", data={**TRANSPORTOR, "lamnare_orgnr": "202100-5488"})
+        self.assertIn("Ogiltigt org.nr: 202100-5488", svar.data.decode())
 
     def test_kommun(self):
         svar = self.klient.post("/ny/producent", data={**PRODUCENT, "till_kommun": "Atlantis"})
@@ -337,7 +346,7 @@ class InstallningarTest(AppCase):
         self.assertIn('name="aktiv" value="1" checked', text)
         self.assertIn("Testbolaget AB</span>", self.klient.get("/").data.decode())
         pdf = pdf_text(self.klient.get("/transportdokument.pdf").data)
-        self.assertIn(b"Org.nr 556000-0000", pdf)
+        self.assertIn(b"Org.nr 556000-0001", pdf)
         self.assertIn(b"miljo@testbolaget.se", pdf)
 
     def test_validering(self):
@@ -350,6 +359,10 @@ class InstallningarTest(AppCase):
         self.assertIn("Okänd kommun: Atlantis", text)
         self.assertIn("Okänd avfallskod: 99 99 99", text)
         self.assertIn("Ange namn på arbetsstället", text)
+        svar = self.klient.post("/installningar", data={**INSTALLNINGAR, "orgnr": "556000-0000"})
+        self.assertIn("Ogiltigt org.nr: 556000-0000", svar.data.decode())
+        self.installningar({**INSTALLNINGAR, "orgnr": "5560000001"})
+        self.assertIn('value="556000-0001"', self.klient.get("/installningar").data.decode())
         self.assertIn('value="Testbolaget AB"', self.klient.get("/installningar").data.decode())
 
     def test_logotyp(self):
@@ -376,15 +389,18 @@ class ParterTest(AppCase):
     def test_part_fylls_i_anteckningen(self):
         part = {
             "namn": "Ragnvald AB",
-            "orgnr": "556333-3333",
+            "orgnr": "556333-3334",
             "adress": "Skrotgatan 1",
             "kommun": "Göteborg",
             "roll": "mottagare",
             "aktiv": "1",
         }
-        self.klient.post("/parter", data=part)
+        svar = self.klient.post("/parter", data={**part, "orgnr": "556333-3333"}, follow_redirects=True)
+        self.assertIn("Ogiltigt org.nr: 556333-3333", svar.data.decode())
+        self.klient.post("/parter", data={**part, "orgnr": "5563333334"})
         text = self.klient.get("/parter").data.decode()
         self.assertIn("Ragnvald AB", text)
+        self.assertIn('value="556333-3334"', text)
         self.assertIn('value="Göteborg"', text)
         pid = text.split('name="id" value="')[1].split('"')[0]
         data = {**PRODUCENT, "mottagare_id": pid, "mottagare_namn": "", "till_adress": "", "till_kommun": ""}
