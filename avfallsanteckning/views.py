@@ -21,7 +21,7 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-from . import db, pdf
+from . import db, installningar, pdf
 from .arbetsdagar import rapportera_senast
 from .texter import GRUND, ROLL_HJALP, ROLLER, STATUS, TRANSPORTSATT
 from .tid import idag, stampel
@@ -33,6 +33,7 @@ VECKODAG = ["mån", "tis", "ons", "tor", "fre", "lör", "sön"]
 MANAD = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
 KOPIERAS_EJ = {"avfallskod", "avfallstyp", "farligt", "vikt_kg", "vikt_uppskattad", "notering"}
 LOGOTYPER = ("logo.png", "logo.svg", "logo.jpg", "logo.webp")
+LOGOTYP_TYPER = {"png": "logo.png", "svg": "logo.svg", "jpg": "logo.jpg", "jpeg": "logo.jpg", "webp": "logo.webp"}
 
 
 def get_db():
@@ -48,6 +49,16 @@ def _stang(_exc):
         conn.close()
 
 
+def inst():
+    if "inst" not in g:
+        g.inst = installningar.las(get_db(), current_app.config["KOMMUNER"])
+    return g.inst
+
+
+def _andelse(filnamn):
+    return filnamn.rsplit(".", 1)[-1].lower() if "." in filnamn else ""
+
+
 def _logotyp():
     mapp = current_app.config["DATA"]
     return next((mapp / namn for namn in LOGOTYPER if (mapp / namn).exists()), None)
@@ -56,7 +67,7 @@ def _logotyp():
 @bp.app_context_processor
 def _globalt():
     return {
-        "inst": current_app.config["INST"],
+        "inst": inst(),
         "logotyp": _logotyp() is not None,
         "version": current_app.config["VERSION"],
         "ROLLER": ROLLER,
@@ -141,16 +152,16 @@ def _formkontext(conn, roll):
         "transportorer": db.parter(conn, "transportor"),
         "mottagare": db.parter(conn, "mottagare"),
         "TRANSPORTSATT": TRANSPORTSATT,
-        "grunder": current_app.config["INST"]["transportor"]["bedomningsgrunder"],
+        "grunder": inst()["transportor"]["bedomningsgrunder"],
         "kommuner": current_app.config["KOMMUNER"].lista,
-        "arbetsstallen": current_app.config["INST"]["arbetsstallen"],
-        "favoriter": json.dumps(current_app.config["INST"]["favoriter"]["koder"]),
+        "arbetsstallen": inst()["arbetsstallen"],
+        "favoriter": json.dumps(inst()["favoriter"]["koder"]),
         "hjalp": ROLL_HJALP[roll],
     }
 
 
 def _standardvarden(roll):
-    v = current_app.config["INST"]["verksamhet"]
+    v = inst()["verksamhet"]
     varden = {
         "transportdatum": idag().isoformat(),
         "transportsatt": TRANSPORTSATT[0],
@@ -158,7 +169,7 @@ def _standardvarden(roll):
         "klassgrund": [],
     }
     if roll == "producent":
-        s = current_app.config["INST"]["arbetsstallen"][0]
+        s = inst()["arbetsstallen"][0]
         varden["arbetsstalle"] = "0"
         varden.update(fran_adress=s["adress"], fran_kommun=s["kommun"], fran_cfar=s["cfar"])
     else:
@@ -167,12 +178,12 @@ def _standardvarden(roll):
 
 
 def _arbetsstalle(val):
-    lista = current_app.config["INST"]["arbetsstallen"]
+    lista = inst()["arbetsstallen"]
     return lista[int(val)] if val.isdigit() and int(val) < len(lista) else None
 
 
 def _arbetsstalleindex(rad):
-    for i, s in enumerate(current_app.config["INST"]["arbetsstallen"]):
+    for i, s in enumerate(inst()["arbetsstallen"]):
         if (s["adress"], s["kommunkod"], s["cfar"]) == (rad["fran_adress"], rad["fran_kommunkod"], rad["fran_cfar"]):
             return str(i)
     return ""
@@ -220,7 +231,7 @@ def _part(form, prefix, conn):
 
 def _las_formular(roll, form, conn):
     fel = []
-    v = current_app.config["INST"]["verksamhet"]
+    v = inst()["verksamhet"]
     kod = current_app.config["KODER"].get(form.get("avfallskod", ""))
     if not kod:
         fel.append("Välj en avfallskod ur listan.")
@@ -233,7 +244,7 @@ def _las_formular(roll, form, conn):
     transportsatt = form.get("transportsatt", TRANSPORTSATT[0])
     if transportsatt not in TRANSPORTSATT:
         fel.append("Ogiltigt transportsätt.")
-    grunder = current_app.config["INST"]["transportor"]["bedomningsgrunder"]
+    grunder = inst()["transportor"]["bedomningsgrunder"]
     klassgrund = [k for k in form.getlist("klassgrund") if k in grunder]
     text = {k: form.get(k, "").strip() for k in db.FALT}
     data = {
@@ -290,7 +301,7 @@ def _las_formular(roll, form, conn):
 
 @bp.route("/ny/<roll>", methods=["GET", "POST"])
 def ny(roll):
-    if roll not in ROLLER or (roll == "transportor" and not current_app.config["INST"]["transportor"]["aktiv"]):
+    if roll not in ROLLER or (roll == "transportor" and not inst()["transportor"]["aktiv"]):
         abort(404)
     conn = get_db()
     if request.method == "POST":
@@ -387,7 +398,7 @@ def ladda_upp(aid):
     for fil in request.files.getlist("filer"):
         if not fil.filename:
             continue
-        andelse = fil.filename.rsplit(".", 1)[-1].lower() if "." in fil.filename else ""
+        andelse = _andelse(fil.filename)
         if andelse not in BILAGA_TYPER:
             flash(f"{fil.filename}: filtypen stöds inte.", "fel")
             continue
@@ -424,7 +435,7 @@ def anteckning_pdf(aid):
     conn = get_db()
     rad = db.hamta(conn, aid) or abort(404)
     p = berika(rad)
-    data = pdf.anteckning(p, current_app.config["INST"], db.bilagor(conn, aid), db.historik(conn, aid))
+    data = pdf.anteckning(p, inst(), db.bilagor(conn, aid), db.historik(conn, aid))
     return _pdf(data, f"anteckning-{p['lopnr']}.pdf")
 
 
@@ -432,14 +443,14 @@ def anteckning_pdf(aid):
 def transportdokument_pdf(aid):
     rad = db.hamta(get_db(), aid) or abort(404)
     p = berika(rad)
-    return _pdf(pdf.transportdokument(p, current_app.config["INST"]), f"transportdokument-{p['lopnr']}.pdf")
+    return _pdf(pdf.transportdokument(p, inst()), f"transportdokument-{p['lopnr']}.pdf")
 
 
 @bp.get("/transportdokument.pdf")
 def blankett():
-    if not current_app.config["INST"]["transportor"]["aktiv"]:
+    if not inst()["transportor"]["aktiv"]:
         abort(404)
-    return _pdf(pdf.blankett(current_app.config["INST"]), "transportdokument-blankett.pdf")
+    return _pdf(pdf.blankett(inst()), "transportdokument-blankett.pdf")
 
 
 @bp.get("/koder.json")
@@ -479,6 +490,45 @@ def parter():
     return render_template(
         "parter.html", parter=db.parter(conn, aktiva=False), kommuner=current_app.config["KOMMUNER"].lista
     )
+
+
+def _installningsvarden(data, stallen):
+    t = data["transportor"]
+    return {
+        **data["verksamhet"],
+        "koder": ", ".join(data["favoriter"]["koder"]),
+        "aktiv": t["aktiv"],
+        "blankett_beskrivning": t["blankett_beskrivning"],
+        "blankett_producent": t["blankett_producent"],
+        "bedomningsgrunder": "\n".join(t["bedomningsgrunder"]),
+        "stallen": [*stallen, *(dict(installningar.ARBETSSTALLE) for _ in range(2))],
+    }
+
+
+@bp.route("/installningar", methods=["GET", "POST"])
+def installningar_sida():
+    if request.method == "POST":
+        data, fel = installningar.tolka(request.form, current_app.config["KOMMUNER"], current_app.config["KODER"])
+        fil = request.files.get("logotyp")
+        fil = fil if fil and fil.filename else None
+        if fil and _andelse(fil.filename) not in LOGOTYP_TYPER:
+            fel.append(f"{fil.filename}: logotypen ska vara png, svg, jpg eller webp.")
+        if not fel:
+            db.spara_installningar(get_db(), data)
+            if fil or request.form.get("ta_bort_logotyp"):
+                for namn in LOGOTYPER:
+                    (current_app.config["DATA"] / namn).unlink(missing_ok=True)
+            if fil:
+                fil.save(current_app.config["DATA"] / LOGOTYP_TYPER[_andelse(fil.filename)])
+            flash("Inställningarna är sparade.")
+            return redirect(url_for("app.installningar_sida"))
+        for f in fel:
+            flash(f, "fel")
+        varden = _installningsvarden(data, data["arbetsstallen"])
+    else:
+        i = inst()
+        varden = _installningsvarden(i, i["arbetsstallen"] if i["egna_stallen"] else [])
+    return render_template("installningar.html", varden=varden, kommuner=current_app.config["KOMMUNER"].lista)
 
 
 @bp.get("/export.csv")

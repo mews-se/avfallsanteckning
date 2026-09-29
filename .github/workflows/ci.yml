@@ -36,8 +36,7 @@ jobs:
 
       - name: Starts and serves
         run: |
-          docker run -d --name app -p 8400:8400 -v "$PWD/ci-data:/data" \
-            -v "$PWD/config.example.toml:/config.toml:ro" avfallsanteckning:ci
+          docker run -d --name app -p 8400:8400 -v "$PWD/ci-data:/data" avfallsanteckning:ci
           for i in $(seq 1 20); do
             curl -sf http://127.0.0.1:8400/healthz && exit 0
             sleep 2

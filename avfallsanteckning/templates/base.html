@@ -17,12 +17,13 @@
 {% endif %}    <a href="{{ url_for('app.parter') }}">Parter</a>
 {% if inst.transportor.aktiv %}    <a href="{{ url_for('app.blankett') }}" target="_blank">Blankett</a>
 {% endif %}    <a href="{{ url_for('app.export') }}">Export</a>
+    <a href="{{ url_for('app.installningar_sida') }}">Inställningar</a>
   </nav>
 </div>
 {% with meddelanden = get_flashed_messages(with_categories=true) %}
 {% for kategori, text in meddelanden %}<div class="flash {{ kategori }}">{{ text }}</div>{% endfor %}
 {% endwith %}
-{% if inst.saknas %}<div class="flash fel">config.toml saknas, verksamhetens uppgifter är tomma.</div>{% endif %}
+{% if inst.saknas %}<div class="flash varning">Verksamhetens uppgifter saknas. Fyll i dem under <a href="{{ url_for('app.installningar_sida') }}">Inställningar</a>.</div>{% endif %}
 {% block innehall %}{% endblock %}
 <div class="foot"><span>Avfallsanteckning {{ version }}</span><span>&copy; {{ idag[:4] }} {{ inst.verksamhet.namn }}</span></div>
 </main>

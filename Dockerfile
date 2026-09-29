@@ -6,7 +6,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY avfallsanteckning ./avfallsanteckning
 
 ENV AVFALLSANTECKNING_DATA=/data \
-    AVFALLSANTECKNING_CONFIG=/config.toml \
     TZ=Europe/Stockholm
 VOLUME ["/data"]
 EXPOSE 8400

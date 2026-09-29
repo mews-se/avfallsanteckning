@@ -55,6 +55,10 @@ CREATE TABLE IF NOT EXISTS bilaga (
     tidpunkt TEXT NOT NULL,
     av TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS installning (
+    sektion TEXT PRIMARY KEY,
+    varde TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS part (
     id INTEGER PRIMARY KEY,
     namn TEXT NOT NULL,
@@ -236,3 +240,17 @@ def spara_part(conn, pid, data):
             [data[f] for f in PARTFALT],
         )
         return cur.lastrowid
+
+
+def installningar(conn):
+    return {r["sektion"]: json.loads(r["varde"]) for r in conn.execute("SELECT sektion, varde FROM installning")}
+
+
+def spara_installningar(conn, data):
+    with conn:
+        for sektion, varde in data.items():
+            conn.execute(
+                "INSERT INTO installning (sektion, varde) VALUES (?, ?)"
+                " ON CONFLICT(sektion) DO UPDATE SET varde = excluded.varde",
+                (sektion, json.dumps(varde, ensure_ascii=False)),
+            )

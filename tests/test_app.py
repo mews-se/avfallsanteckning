@@ -9,38 +9,25 @@ from pathlib import Path
 
 from avfallsanteckning import create_app
 
-KONFIG = """
-[verksamhet]
-namn = "Testbolaget AB"
-orgnr = "556000-0000"
-adress = "Testvägen 1"
-postnummer = "117 55"
-ort = "Stockholm"
-kommun = "Stockholm"
-cfar = "12345678"
-kontakt = "miljo@testbolaget.se"
-
-[favoriter]
-koder = ["13 02 08*", "16 01 07*"]
-
-[transportor]
-aktiv = true
-blankett_beskrivning = "Avfall som hittats vid vägen"
-blankett_producent = "Okänd, avfallet är upphittat"
-bedomningsgrunder = ["Spill av olja eller kemikalier", "Osäker bedömning, hanteras som farligt"]
-
-[[arbetsstallen]]
-namn = "Verkstaden"
-adress = "Testvägen 1, 117 55 Stockholm"
-kommun = "Stockholm"
-cfar = "12345678"
-
-[[arbetsstallen]]
-namn = "Depån"
-adress = "Depåvägen 2, 131 54 Nacka"
-kommun = "Nacka"
-cfar = ""
-"""
+INSTALLNINGAR = {
+    "namn": "Testbolaget AB",
+    "orgnr": "556000-0000",
+    "adress": "Testvägen 1",
+    "postnummer": "117 55",
+    "ort": "Stockholm",
+    "kommun": "Stockholm",
+    "cfar": "12345678",
+    "kontakt": "miljo@testbolaget.se",
+    "koder": "13 02 08*, 16 01 07*",
+    "aktiv": "1",
+    "blankett_beskrivning": "Avfall som hittats vid vägen",
+    "blankett_producent": "Okänd, avfallet är upphittat",
+    "bedomningsgrunder": "Spill av olja eller kemikalier\nOsäker bedömning, hanteras som farligt",
+    "stalle_namn": ["Verkstaden", "Depån"],
+    "stalle_adress": ["Testvägen 1, 117 55 Stockholm", "Depåvägen 2, 131 54 Nacka"],
+    "stalle_kommun": ["Stockholm", "Nacka"],
+    "stalle_cfar": ["12345678", ""],
+}
 
 PRODUCENT = {
     "avfallskod": "13 02 08*",
@@ -98,11 +85,14 @@ class AppCase(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        katalog = Path(self.tmp.name)
-        (katalog / "config.toml").write_text(KONFIG, encoding="utf-8")
-        app = create_app(config_path=katalog / "config.toml", data_dir=katalog / "data")
+        app = create_app(data_dir=Path(self.tmp.name) / "data")
         app.config["TESTING"] = True
         self.klient = app.test_client()
+        self.installningar(INSTALLNINGAR)
+
+    def installningar(self, data):
+        svar = self.klient.post("/installningar", data=data)
+        self.assertEqual(svar.status_code, 302, svar.data.decode())
 
     def skapa(self, roll, data):
         svar = self.klient.post(f"/ny/{roll}", data=data)
@@ -204,10 +194,8 @@ class ArbetsstalleTest(AppCase):
         self.assertIn('<option value="">annan plats, skriv in nedan</option>', text)
 
     def test_utan_lista_anvands_verksamheten(self):
-        katalog = Path(self.tmp.name)
-        (katalog / "ensam.toml").write_text(KONFIG.split("[[arbetsstallen]]")[0], encoding="utf-8")
-        app = create_app(config_path=katalog / "ensam.toml", data_dir=katalog / "ensam")
-        text = app.test_client().get("/ny/producent").data.decode()
+        self.installningar({k: v for k, v in INSTALLNINGAR.items() if not k.startswith("stalle_")})
+        text = self.klient.get("/ny/producent").data.decode()
         self.assertIn('<option value="0" selected>Testbolaget AB, Testvägen 1, 117 55 Stockholm (CFAR 12345678)', text)
         self.assertNotIn('<option value="1"', text)
 
@@ -304,19 +292,16 @@ class TransportorTest(AppCase):
         text = self.klient.get("/").data.decode()
         self.assertIn("Ny: transportör", text)
         self.assertIn("Blankett", text)
-        katalog = Path(self.tmp.name)
-        (katalog / "producent.toml").write_text(KONFIG.replace("aktiv = true", "aktiv = false"), encoding="utf-8")
-        app = create_app(config_path=katalog / "producent.toml", data_dir=katalog / "producent")
-        klient = app.test_client()
-        text = klient.get("/").data.decode()
+        self.installningar({k: v for k, v in INSTALLNINGAR.items() if k != "aktiv"})
+        text = self.klient.get("/").data.decode()
         self.assertNotIn("Ny: transportör", text)
         self.assertNotIn("Blankett", text)
         self.assertNotIn('name="roll"', text)
-        self.assertEqual(klient.get("/ny/transportor").status_code, 404)
-        self.assertEqual(klient.get("/transportdokument.pdf").status_code, 404)
-        self.assertEqual(klient.get("/ny/producent").status_code, 200)
+        self.assertEqual(self.klient.get("/ny/transportor").status_code, 404)
+        self.assertEqual(self.klient.get("/transportdokument.pdf").status_code, 404)
+        self.assertEqual(self.klient.get("/ny/producent").status_code, 200)
 
-    def test_grunder_och_blankett_fran_config(self):
+    def test_grunder_och_blankett_fran_installningarna(self):
         text = self.klient.get("/ny/transportor").data.decode()
         self.assertIn('value="Spill av olja eller kemikalier"', text)
         pdf = pdf_text(self.klient.get("/transportdokument.pdf").data)
@@ -324,18 +309,67 @@ class TransportorTest(AppCase):
         self.assertIn(b"hittats vid v", pdf)
         self.assertIn(b"Spill av olja", pdf)
         self.assertEqual(pdf.count(b"Namnf"), 1)
-        katalog = Path(self.tmp.name)
-        konfig = re.sub(r"^(blankett_\w+|bedomningsgrunder) = .*\n", "", KONFIG, flags=re.M)
-        (katalog / "enkel.toml").write_text(konfig, encoding="utf-8")
-        app = create_app(config_path=katalog / "enkel.toml", data_dir=katalog / "enkel")
-        klient = app.test_client()
-        self.assertNotIn("Grund för bedömningen", klient.get("/ny/transportor").data.decode())
-        svar = klient.post("/ny/transportor", data={**TRANSPORTOR, "klassgrund": []})
+        enkel = {k: v for k, v in INSTALLNINGAR.items() if not k.startswith(("blankett_", "bedomningsgrunder"))}
+        self.installningar(enkel)
+        self.assertNotIn("Grund för bedömningen", self.klient.get("/ny/transportor").data.decode())
+        svar = self.klient.post("/ny/transportor", data={**TRANSPORTOR, "klassgrund": []})
         self.assertEqual(svar.status_code, 302, svar.data.decode())
-        pdf = pdf_text(klient.get("/transportdokument.pdf").data)
+        pdf = pdf_text(self.klient.get("/transportdokument.pdf").data)
         self.assertNotIn(b"upphittat", pdf)
         self.assertNotIn(b"Kryssa", pdf)
         self.assertEqual(pdf.count(b"Namnf"), 2)
+
+
+class InstallningarTest(AppCase):
+    def test_forsta_start(self):
+        app = create_app(data_dir=Path(self.tmp.name) / "ny")
+        text = app.test_client().get("/").data.decode()
+        self.assertIn("Verksamhetens uppgifter saknas", text)
+        self.assertEqual(app.test_client().get("/installningar").status_code, 200)
+        self.assertNotIn("Verksamhetens uppgifter saknas", self.klient.get("/").data.decode())
+
+    def test_sparas_och_visas(self):
+        text = self.klient.get("/installningar").data.decode()
+        self.assertIn('value="Testbolaget AB"', text)
+        self.assertIn('value="13 02 08*, 16 01 07*"', text)
+        self.assertIn('value="Depåvägen 2, 131 54 Nacka"', text)
+        self.assertIn("Spill av olja eller kemikalier\nOsäker bedömning", text)
+        self.assertIn('name="aktiv" value="1" checked', text)
+        self.assertIn("Testbolaget AB</span>", self.klient.get("/").data.decode())
+        pdf = pdf_text(self.klient.get("/transportdokument.pdf").data)
+        self.assertIn(b"Org.nr 556000-0000", pdf)
+        self.assertIn(b"miljo@testbolaget.se", pdf)
+
+    def test_validering(self):
+        data = {**INSTALLNINGAR, "namn": "", "kommun": "Atlantis", "koder": "13 02 08*, 99 99 99"}
+        data["stalle_namn"] = ["", "Depån"]
+        svar = self.klient.post("/installningar", data=data)
+        text = svar.data.decode()
+        self.assertEqual(svar.status_code, 200)
+        self.assertIn("Ange verksamhetens namn", text)
+        self.assertIn("Okänd kommun: Atlantis", text)
+        self.assertIn("Okänd avfallskod: 99 99 99", text)
+        self.assertIn("Ange namn på arbetsstället", text)
+        self.assertIn('value="Testbolaget AB"', self.klient.get("/installningar").data.decode())
+
+    def test_logotyp(self):
+        self.assertEqual(self.klient.get("/logotyp").status_code, 404)
+        text = self.klient.get("/").data.decode()
+        self.assertNotIn("/logotyp", text)
+        self.assertIn("<small>Testbolaget AB</small>", text)
+        self.installningar({**INSTALLNINGAR, "logotyp": (io.BytesIO(b"\x89PNG\r\n\x1a\n"), "firma.png")})
+        with self.klient.get("/logotyp") as svar:
+            self.assertEqual(svar.status_code, 200)
+            self.assertEqual(svar.mimetype, "image/png")
+        text = self.klient.get("/").data.decode()
+        self.assertIn('src="/logotyp"', text)
+        self.assertNotIn("<small>Testbolaget AB</small>", text)
+        svar = self.klient.post("/installningar", data={**INSTALLNINGAR, "logotyp": (io.BytesIO(b"x"), "fel.exe")})
+        self.assertIn("png, svg, jpg eller webp", svar.data.decode())
+        with self.klient.get("/logotyp") as svar:
+            self.assertEqual(svar.status_code, 200)
+        self.installningar({**INSTALLNINGAR, "ta_bort_logotyp": "1"})
+        self.assertEqual(self.klient.get("/logotyp").status_code, 404)
 
 
 class ParterTest(AppCase):
@@ -359,19 +393,6 @@ class ParterTest(AppCase):
         self.assertIn("Ragnvald AB", text)
         self.assertIn("Skrotgatan 1", text)
         self.assertIn("Göteborg (1480)", text)
-
-    def test_logotyp_fran_datakatalogen(self):
-        self.assertEqual(self.klient.get("/logotyp").status_code, 404)
-        text = self.klient.get("/").data.decode()
-        self.assertNotIn("/logotyp", text)
-        self.assertIn("<small>Testbolaget AB</small>", text)
-        (Path(self.tmp.name) / "data" / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-        with self.klient.get("/logotyp") as svar:
-            self.assertEqual(svar.status_code, 200)
-            self.assertEqual(svar.mimetype, "image/png")
-        text = self.klient.get("/").data.decode()
-        self.assertIn('src="/logotyp"', text)
-        self.assertNotIn("<small>Testbolaget AB</small>", text)
 
     def test_healthz(self):
         self.assertEqual(json.loads(self.klient.get("/healthz").data)["ok"], True)

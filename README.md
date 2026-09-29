@@ -49,14 +49,14 @@ Med Docker, utan att klona repot:
 
     mkdir avfallsanteckning && cd avfallsanteckning
     curl -O https://raw.githubusercontent.com/mews-se/avfallsanteckning/main/docker-compose.yml
-    curl -o config.toml https://raw.githubusercontent.com/mews-se/avfallsanteckning/main/config.example.toml
     docker compose up -d
 
-Fyll i `config.toml` med verksamhetens uppgifter först. Bilden
-`ghcr.io/mews-se/avfallsanteckning` byggs för amd64 och arm64 och följer
-`main`; `docker compose pull && docker compose up -d` uppdaterar. Sidan
-svarar på port 8400. `./data` innehåller databasen och bilagorna och är
-det som ska säkerhetskopieras. Anteckningar ska sparas i minst tre år.
+Sidan svarar på port 8400. Fyll i verksamhetens uppgifter under
+Inställningar första gången. Bilden `ghcr.io/mews-se/avfallsanteckning`
+byggs för amd64 och arm64 och följer `main`; `docker compose pull &&
+docker compose up -d` uppdaterar. `./data` innehåller databasen,
+bilagorna och logotypen och är det som ska säkerhetskopieras.
+Anteckningar ska sparas i minst tre år.
 
 Från källkoden byggs samma bild med `docker build -t avfallsanteckning .`.
 
@@ -65,59 +65,33 @@ Utan Docker:
     python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
     AVFALLSANTECKNING_HOST=0.0.0.0 .venv/bin/python -m avfallsanteckning
 
-Miljövariabler: `AVFALLSANTECKNING_CONFIG` (standard `config.toml`),
-`AVFALLSANTECKNING_DATA` (standard `data`), `AVFALLSANTECKNING_HOST`,
-`AVFALLSANTECKNING_PORT`.
+Miljövariabler: `AVFALLSANTECKNING_DATA` (standard `data`),
+`AVFALLSANTECKNING_HOST`, `AVFALLSANTECKNING_PORT`.
 
 Appen har ingen inloggning. Kör den på det egna nätet eller bakom en
 reverse proxy med inloggning.
 
-Lägg en fil `logo.png` (eller `logo.svg`, `logo.jpg`, `logo.webp`) i
-datakatalogen så visas den i sidhuvudet i stället för verksamhetens namn.
+## Inställningar
 
-## Konfiguration
+Allt som är eget för verksamheten skrivs in under Inställningar i appen
+och sparas i databasen:
 
-`config.toml`:
-
-    [verksamhet]
-    namn = "Bolaget AB"
-    orgnr = "556xxx-xxxx"
-    adress = "Gatan 1"
-    postnummer = "117 55"
-    ort = "Stockholm"
-    kommun = "Stockholm"
-    cfar = "12345678"
-    kontakt = "miljo@bolaget.se"
-
-    [favoriter]
-    koder = ["13 02 08*", "16 01 07*", "15 02 02*"]
-
-    [transportor]
-    aktiv = true
-    blankett_beskrivning = "Avfall som hämtas hos kund"
-    blankett_producent = ""
-    bedomningsgrunder = ["Tydlig förekomst av farliga ämnen", "Osäker bedömning"]
-
-    [[arbetsstallen]]
-    namn = "Huvudkontor"
-    adress = "Gatan 1, 117 55 Stockholm"
-    kommun = "Stockholm"
-    cfar = "12345678"
-
-CFAR-numret är arbetsställets nummer hos SCB och krävs i producentrapporter.
-`arbetsstallen` är platserna att välja bland där avfallet producerats, med
-varsitt CFAR-nummer; lämna det tomt för en plats som inte är ett eget
-arbetsställe. Utan listan används verksamhetens adress och CFAR-nummer.
-`transportor` slår på anteckningar som transportör och den tomma
-blanketten, för verksamheter som själva transporterar farligt avfall.
-Utan sektionen finns bara producentsidan. `blankett_beskrivning` skrivs
-under blankettens rubrik. `blankett_producent` förtrycker producenten på
-blanketten, till exempel att den är okänd när avfallet är upphittat; utan
-texten finns en ifyllningsrad och producentens underskrift.
-`bedomningsgrunder` är omständigheterna att kryssa i, på blanketten och i
-transportörsanteckningen, som grund för att avfallet bedömts som farligt;
-med en tom lista finns inget sådant avsnitt. `kontakt` skrivs ut på
-blanketten som den adress dit den fotograferade blanketten ska mejlas.
+- **Verksamhet**: namn, org.nr, adress, kommun, CFAR-nummer och
+  kontaktadress. CFAR-numret är arbetsställets nummer hos SCB och krävs i
+  producentrapporter. Kontaktadressen skrivs ut på blanketten som den
+  adress dit den fotograferade blanketten ska mejlas.
+- **Logotyp** i sidhuvudet. Utan logotyp visas verksamhetens namn.
+- **Arbetsställen** att välja bland där avfallet producerats, med varsitt
+  CFAR-nummer. Utan egna arbetsställen används verksamhetens adress och
+  CFAR-nummer.
+- **Vanliga avfallskoder**, som ligger överst i kodväljaren.
+- **Transportör**: slår på anteckningar som transportör och den tomma
+  blanketten, för verksamheter som själva transporterar farligt avfall.
+  Här sätts blankettens beskrivningsrad, en förtryckt producent (till
+  exempel att den är okänd när avfallet är upphittat; utan text finns en
+  ifyllningsrad och producentens underskrift) och grunderna att kryssa i
+  för att avfallet bedömts som farligt, på blanketten och i
+  transportörsanteckningen.
 
 ## Avfallskoder och kommuner
 

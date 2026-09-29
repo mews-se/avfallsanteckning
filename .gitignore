@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 .venv/
 /data/
-/config.toml
 *.db
 *.db-wal
 *.db-shm

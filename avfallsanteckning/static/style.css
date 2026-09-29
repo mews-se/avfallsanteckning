@@ -65,4 +65,5 @@ table.detalj td{white-space:normal;padding:7px 10px}td.forformaterad{white-space
 .steg{padding-left:20px;margin:6px 0 12px;color:var(--ink-2)}.steg li{margin-bottom:3px}
 details summary{cursor:pointer;color:var(--ink-3);font-size:12.5px;margin-top:8px}details form{margin-top:8px}
 tr.ny td{background:var(--raised)}
+table.stallen{border:0;background:none}table.stallen th,table.stallen td{padding:3px 6px 3px 0;border:0}table.stallen input{width:100%}
 @media (max-width:820px){.kolumner{grid-template-columns:1fr}.formular fieldset{grid-template-columns:1fr}table.detalj th{width:120px}}
