@@ -8,7 +8,7 @@
 [![licens](https://img.shields.io/badge/licens-MIT-green)](LICENSE)
 
 Anteckningar om farligt avfall enligt 6 kap. avfallsförordningen
-(2020:614), för verksamheter som producerar farligt avfall och för dem som
+(2020:614), för verksamheter som producerar farligt avfall och för de som
 själva transporterar det. Varje anteckning blir ett färdigt underlag för
 rapporten till Naturvårdsverkets avfallsregister, med tidsfristen uträknad i
 arbetsdagar, en status som visar om rapporten är lämnad, och PDF att spara
@@ -182,20 +182,6 @@ skriptet igen när bilaga 3 ändras; ändringar med senare ikraftträdande får
 sina datum och slår igenom av sig själva. `avfallsanteckning/data/kommuner.json`
 byggs av `tools/kommuner.py` ur SCB:s lista över kommuner i
 kodnummerordning (källa: SCB, CC0).
-
-## Utveckling
-
-Python 3.11 eller senare, Flask, ReportLab, waitress och SQLite. Inga
-JavaScript-beroenden, ingen byggkedja.
-
-```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt ruff
-.venv/bin/ruff check .
-.venv/bin/python -m unittest discover -s tests
-```
-
-CI kör lint, testerna och ett rökprov av containern på varje push. Bilden
-publiceras från `main` och från taggar `v*`.
 
 ## Licens
 
