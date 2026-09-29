@@ -63,6 +63,9 @@ Miljövariabler: `AVFALLSANTECKNING_CONFIG` (standard `config.toml`),
 Appen har ingen inloggning. Kör den på det egna nätet eller bakom en
 reverse proxy med inloggning.
 
+Lägg en fil `logo.png` (eller `logo.svg`, `logo.jpg`, `logo.webp`) i
+datakatalogen så visas den i sidhuvudet i stället för verksamhetens namn.
+
 ## Konfiguration
 
 `config.toml`:

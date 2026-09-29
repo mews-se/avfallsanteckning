@@ -296,5 +296,18 @@ class ParterTest(AppCase):
         self.assertIn("Skrotgatan 1", text)
         self.assertIn("Göteborg (1480)", text)
 
+    def test_logotyp_fran_datakatalogen(self):
+        self.assertEqual(self.klient.get("/logotyp").status_code, 404)
+        text = self.klient.get("/").data.decode()
+        self.assertNotIn("/logotyp", text)
+        self.assertIn("<small>Testbolaget AB</small>", text)
+        (Path(self.tmp.name) / "data" / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+        svar = self.klient.get("/logotyp")
+        self.assertEqual(svar.status_code, 200)
+        self.assertEqual(svar.mimetype, "image/png")
+        text = self.klient.get("/").data.decode()
+        self.assertIn('src="/logotyp"', text)
+        self.assertNotIn("<small>Testbolaget AB</small>", text)
+
     def test_healthz(self):
         self.assertEqual(json.loads(self.klient.get("/healthz").data)["ok"], True)

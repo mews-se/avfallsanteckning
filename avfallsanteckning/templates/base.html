@@ -9,7 +9,8 @@
 <body>
 <main>
 <div class="top">
-  <h1><a href="{{ url_for('app.index') }}">Avfallsanteckning</a>{% if inst.verksamhet.namn %} <small>{{ inst.verksamhet.namn }}</small>{% endif %}</h1>
+{% if logotyp %}  <a class="logo" href="{{ url_for('app.index') }}"><img src="{{ url_for('app.logotyp') }}" alt="{{ inst.verksamhet.namn }}"></a>
+{% endif %}  <h1><a href="{{ url_for('app.index') }}">Avfallsanteckning</a>{% if inst.verksamhet.namn and not logotyp %} <small>{{ inst.verksamhet.namn }}</small>{% endif %}</h1>
   <nav>
     <a href="{{ url_for('app.ny', roll='producent') }}">Ny: producent</a>
     <a href="{{ url_for('app.ny', roll='transportor') }}">Ny: transportör</a>

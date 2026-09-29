@@ -32,6 +32,7 @@ BILAGA_TYPER = {"pdf", "jpg", "jpeg", "png", "heic", "webp"}
 VECKODAG = ["mån", "tis", "ons", "tor", "fre", "lör", "sön"]
 MANAD = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
 KOPIERAS_EJ = {"avfallskod", "avfallstyp", "farligt", "vikt_kg", "vikt_uppskattad", "notering"}
+LOGOTYPER = ("logo.png", "logo.svg", "logo.jpg", "logo.webp")
 
 
 def get_db():
@@ -47,10 +48,16 @@ def _stang(_exc):
         conn.close()
 
 
+def _logotyp():
+    mapp = current_app.config["DATA"]
+    return next((mapp / namn for namn in LOGOTYPER if (mapp / namn).exists()), None)
+
+
 @bp.app_context_processor
 def _globalt():
     return {
         "inst": current_app.config["INST"],
+        "logotyp": _logotyp() is not None,
         "version": current_app.config["VERSION"],
         "ROLLER": ROLLER,
         "STATUS": STATUS,
@@ -391,6 +398,11 @@ def ladda_upp(aid):
     if antal:
         flash(f"{antal} bilaga sparad." if antal == 1 else f"{antal} bilagor sparade.")
     return redirect(url_for("app.visa", aid=aid))
+
+
+@bp.get("/logotyp")
+def logotyp():
+    return send_file(_logotyp() or abort(404), max_age=3600)
 
 
 @bp.get("/bilaga/<int:bid>")
