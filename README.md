@@ -94,8 +94,10 @@ och sparas i databasen:
 
 Org.nr kontrolleras mot kontrollsiffran och sparas som 556xxx-xxxx, på
 Inställningar, på Parter och i anteckningarna. Vid fälten finns länkar
-till SCB:s sökning av arbetsställen med CFAR-nummer och till
-Bolagsverkets företagssökning. Båda är fria att använda.
+till SCB:s sökning av arbetsställen med CFAR-nummer, Bolagsverkets
+företagssökning, länsstyrelsernas register över avfallstransportörer
+och Naturvårdsverkets vägledning om avfallsregistret. Alla är fria att
+använda.
 
 ## Avfallskoder och kommuner
 

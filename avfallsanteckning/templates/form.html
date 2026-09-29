@@ -2,7 +2,7 @@
 {% block titel %}{% if aid %}Redigera {{ varden.lopnr }}{% else %}Ny anteckning{% endif %} · Avfallsanteckning{% endblock %}
 {% block innehall %}
 <h2>{% if aid %}Redigera anteckning {{ varden.lopnr }}{% else %}Ny anteckning{% endif %} <span class="roll">{{ ROLLER[roll] }}</span></h2>
-<p class="hjalp">{{ hjalp }} {{ GRUND[roll] }}. Anteckningen ska vara förd innan transporten påbörjas och rapporteras till Naturvårdsverkets avfallsregister senast två arbetsdagar efter transportdatumet.</p>
+<p class="hjalp">{{ hjalp }} {{ GRUND[roll] }}. Anteckningen ska vara förd innan transporten påbörjas och rapporteras till <a href="https://www.naturvardsverket.se/vagledning-och-stod/avfall-farligt-avfall/avfallsregistret/" target="_blank" rel="noopener">Naturvårdsverkets avfallsregister</a> senast två arbetsdagar efter transportdatumet.</p>
 <form method="post" class="panel formular" autocomplete="off">
 <fieldset>
   <legend>Avfall</legend>

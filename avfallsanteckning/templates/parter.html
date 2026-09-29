@@ -2,7 +2,7 @@
 {% block titel %}Parter · Avfallsanteckning{% endblock %}
 {% block innehall %}
 <h2>Parter</h2>
-<p class="hjalp">Transportörer och mottagare som återkommer i anteckningarna. Org.nr, adress och kommun följer med in i anteckningen och i rapporten till avfallsregistret. Namn och adress på ett org.nr finns i Bolagsverkets <a href="https://foretagsinfo.bolagsverket.se/sok-foretagsinformation-web/" target="_blank" rel="noopener">Sök företagsinformation</a>.</p>
+<p class="hjalp">Transportörer och mottagare som återkommer i anteckningarna. Org.nr, adress och kommun följer med in i anteckningen och i rapporten till avfallsregistret. Namn och adress på ett org.nr finns i Bolagsverkets <a href="https://foretagsinfo.bolagsverket.se/sok-foretagsinformation-web/" target="_blank" rel="noopener">Sök företagsinformation</a>. Vilka som har tillstånd eller anmälan för att transportera avfall syns i länsstyrelsernas register <a href="https://www.kontrolleraavfallstransportorer.se/" target="_blank" rel="noopener">Kontrollera avfallstransportörer</a>.</p>
 {% for p in parter %}<form id="part{{ p.id }}" method="post" action="{{ url_for('app.parter') }}"><input type="hidden" name="id" value="{{ p.id }}"></form>{% endfor %}
 <form id="partny" method="post" action="{{ url_for('app.parter') }}"></form>
 <datalist id="kommuner">{% for k in kommuner %}<option value="{{ k.namn }}">{% endfor %}</datalist>

@@ -163,6 +163,9 @@ class FormularTest(AppCase):
         text = self.klient.get(f"/anteckning/{aid}").data.decode()
         self.assertIn("rapporteras inte", text)
 
+    def test_formularet_lankar_vagledningen(self):
+        self.assertIn("naturvardsverket.se/vagledning-och-stod", self.klient.get("/ny/producent").data.decode())
+
     def test_kopiera_behaller_transporten_men_inte_avfallet(self):
         aid = self.skapa("producent", PRODUCENT)
         text = self.klient.get(f"/ny/producent?kopiera={aid}").data.decode()
@@ -410,6 +413,7 @@ class ParterTest(AppCase):
         self.assertIn("Ragnvald AB", text)
         self.assertIn('value="556333-3334"', text)
         self.assertIn("foretagsinfo.bolagsverket.se", text)
+        self.assertIn("kontrolleraavfallstransportorer.se", text)
         self.assertIn('value="Göteborg"', text)
         pid = text.split('name="id" value="')[1].split('"')[0]
         data = {**PRODUCENT, "mottagare_id": pid, "mottagare_namn": "", "till_adress": "", "till_kommun": ""}
