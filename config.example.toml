@@ -27,6 +27,11 @@ koder = [
   "20 01 21*",
 ]
 
+# anteckningar som transportör (6 kap. 2 §) och den tomma blanketten,
+# för verksamheter som själva transporterar farligt avfall
+[transportor]
+aktiv = false
+
 # arbetsställen att välja bland som plats där avfallet producerats;
 # CFAR är arbetsställets nummer hos SCB, tomt för en plats som inte är ett eget arbetsställe
 [[arbetsstallen]]

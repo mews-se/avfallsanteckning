@@ -20,6 +20,9 @@ kontakt = "miljo@testbolaget.se"
 [favoriter]
 koder = ["13 02 08*", "16 01 07*"]
 
+[transportor]
+aktiv = true
+
 [[arbetsstallen]]
 namn = "Verkstaden"
 adress = "Testvägen 1, 117 55 Stockholm"
@@ -272,6 +275,24 @@ class DokumentTest(AppCase):
             f"/anteckning/{aid}/bilaga", data=data, content_type="multipart/form-data", follow_redirects=True
         )
         self.assertIn("filtypen stöds inte", svar.data.decode())
+
+
+class TransportorTest(AppCase):
+    def test_rollen_kan_stangas_av(self):
+        text = self.klient.get("/").data.decode()
+        self.assertIn("Ny: transportör", text)
+        self.assertIn("Blankett", text)
+        katalog = Path(self.tmp.name)
+        (katalog / "producent.toml").write_text(KONFIG.replace("aktiv = true", "aktiv = false"), encoding="utf-8")
+        app = create_app(config_path=katalog / "producent.toml", data_dir=katalog / "producent")
+        klient = app.test_client()
+        text = klient.get("/").data.decode()
+        self.assertNotIn("Ny: transportör", text)
+        self.assertNotIn("Blankett", text)
+        self.assertNotIn('name="roll"', text)
+        self.assertEqual(klient.get("/ny/transportor").status_code, 404)
+        self.assertEqual(klient.get("/transportdokument.pdf").status_code, 404)
+        self.assertEqual(klient.get("/ny/producent").status_code, 200)
 
 
 class ParterTest(AppCase):

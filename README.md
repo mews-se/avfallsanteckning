@@ -83,6 +83,9 @@ datakatalogen så visas den i sidhuvudet i stället för verksamhetens namn.
     [favoriter]
     koder = ["13 02 08*", "16 01 07*", "15 02 02*"]
 
+    [transportor]
+    aktiv = true
+
     [[arbetsstallen]]
     namn = "Huvudkontor"
     adress = "Gatan 1, 117 55 Stockholm"
@@ -93,8 +96,11 @@ CFAR-numret är arbetsställets nummer hos SCB och krävs i producentrapporter.
 `arbetsstallen` är platserna att välja bland där avfallet producerats, med
 varsitt CFAR-nummer; lämna det tomt för en plats som inte är ett eget
 arbetsställe. Utan listan används verksamhetens adress och CFAR-nummer.
-`kontakt` skrivs ut på den tomma blanketten som den adress dit den
-fotograferade blanketten ska mejlas.
+`transportor` slår på anteckningar som transportör och den tomma
+blanketten, för verksamheter som själva transporterar farligt avfall.
+Utan sektionen finns bara producentsidan. `kontakt` skrivs ut på den
+tomma blanketten som den adress dit den fotograferade blanketten ska
+mejlas.
 
 ## Avfallskoder och kommuner
 

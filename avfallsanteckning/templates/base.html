@@ -13,10 +13,10 @@
 {% endif %}  <h1><a href="{{ url_for('app.index') }}">Avfallsanteckning</a>{% if inst.verksamhet.namn and not logotyp %} <small>{{ inst.verksamhet.namn }}</small>{% endif %}</h1>
   <nav>
     <a href="{{ url_for('app.ny', roll='producent') }}">Ny: producent</a>
-    <a href="{{ url_for('app.ny', roll='transportor') }}">Ny: transportör</a>
-    <a href="{{ url_for('app.parter') }}">Parter</a>
-    <a href="{{ url_for('app.blankett') }}" target="_blank">Blankett</a>
-    <a href="{{ url_for('app.export') }}">Export</a>
+{% if inst.transportor.aktiv %}    <a href="{{ url_for('app.ny', roll='transportor') }}">Ny: transportör</a>
+{% endif %}    <a href="{{ url_for('app.parter') }}">Parter</a>
+{% if inst.transportor.aktiv %}    <a href="{{ url_for('app.blankett') }}" target="_blank">Blankett</a>
+{% endif %}    <a href="{{ url_for('app.export') }}">Export</a>
   </nav>
 </div>
 {% with meddelanden = get_flashed_messages(with_categories=true) %}

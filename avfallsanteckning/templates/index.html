@@ -10,10 +10,10 @@
     {% for a in ar_lista %}<option value="{{ a }}"{% if a == ar %} selected{% endif %}>{{ a }}</option>{% endfor %}
     <option value="alla"{% if ar == 'alla' %} selected{% endif %}>Alla</option>
   </select></label>
-  <label>Roll<select name="roll"><option value="">Alla</option>
+{% if inst.transportor.aktiv %}  <label>Roll<select name="roll"><option value="">Alla</option>
     {% for k, n in ROLLER.items() %}<option value="{{ k }}"{% if k == roll %} selected{% endif %}>{{ n }}</option>{% endfor %}
   </select></label>
-  <label>Status<select name="status"><option value="">Alla</option>
+{% endif %}  <label>Status<select name="status"><option value="">Alla</option>
     {% for k, n in STATUS.items() %}<option value="{{ k }}"{% if k == status %} selected{% endif %}>{{ n }}</option>{% endfor %}
   </select></label>
   <button type="submit">Visa</button><a href="{{ url_for('app.index') }}">Rensa</a>

@@ -289,7 +289,7 @@ def _las_formular(roll, form, conn):
 
 @bp.route("/ny/<roll>", methods=["GET", "POST"])
 def ny(roll):
-    if roll not in ROLLER:
+    if roll not in ROLLER or (roll == "transportor" and not current_app.config["INST"]["transportor"]["aktiv"]):
         abort(404)
     conn = get_db()
     if request.method == "POST":
@@ -436,6 +436,8 @@ def transportdokument_pdf(aid):
 
 @bp.get("/transportdokument.pdf")
 def blankett():
+    if not current_app.config["INST"]["transportor"]["aktiv"]:
+        abort(404)
     return _pdf(pdf.blankett(current_app.config["INST"]), "transportdokument-blankett.pdf")
 
 
