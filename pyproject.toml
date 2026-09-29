@@ -1,0 +1,17 @@
+[project]
+name = "avfallsanteckning"
+description = "Anteckningar om farligt avfall enligt 6 kap. avfallsförordningen"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dynamic = ["version"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "C4", "RUF"]
+allowed-confusables = ["–"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["avfallsanteckning", "tools"]

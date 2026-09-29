@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block titel %}{{ p.lopnr }} · Avfallsanteckning{% endblock %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h2>Anteckning {{ p.lopnr }} <span class="status {{ p.status }}">{{ STATUS[p.status] }}</span></h2>
+  <div class="knappar">
+    <a class="knapp" href="{{ url_for('app.anteckning_pdf', aid=p.id) }}" target="_blank">Anteckning, PDF</a>
+    <a class="knapp" href="{{ url_for('app.transportdokument_pdf', aid=p.id) }}" target="_blank">Transportdokument, PDF</a>
+    {% if p.status != 'makulerad' %}<a class="knapp sekundar" href="{{ url_for('app.redigera', aid=p.id) }}">Redigera</a>{% endif %}
+    <a class="knapp sekundar" href="{{ url_for('app.ny', roll=p.roll, kopiera=p.id) }}">Kopiera till ny</a>
+  </div>
+</div>
+<p class="hjalp">{{ ROLLER[p.roll] }} · {{ GRUND[p.roll] }}</p>
+{% if p.forsenad %}<div class="flash fel">Rapporteringen till avfallsregistret är försenad med {{ -p.dagar_kvar }} dagar.</div>{% endif %}
+
+<div class="kolumner">
+<table class="detalj"><tbody>
+  <tr><th>Avfallstyp</th><td><span class="mono">{{ p.avfallskod }}</span> {{ p.avfallstyp }}{% if p.farligt %} <span class="badge">farligt avfall</span>{% endif %}</td></tr>
+  <tr><th>Vikt</th><td>{{ p.vikt_kg|vikt }} kg{% if p.vikt_uppskattad %} <small>uppskattad</small>{% endif %}</td></tr>
+  <tr><th>{% if p.roll == 'producent' %}Datum för borttransport{% else %}Datum för transport{% endif %}</th><td>{{ p.transportdatum|dag }}</td></tr>
+  <tr><th>Transportsätt</th><td>{{ p.transportsatt }}</td></tr>
+{% if p.roll == 'producent' %}
+  <tr><th>Var avfallet producerats</th><td>{{ p.fran_adress }}{% if p.fran_kommunkod %} <small>{{ p.fran_kommunkod|kommun }}</small>{% endif %}{% if p.fran_cfar %} <small>CFAR {{ p.fran_cfar }}</small>{% endif %}</td></tr>
+  <tr><th>Transportör</th><td>{{ p.transportor_namn }}{% if p.transportor_orgnr %} <small>{{ p.transportor_orgnr }}</small>{% endif %}</td></tr>
+{% else %}
+  <tr><th>Från vem</th><td>{{ p.lamnare_namn }}{% if p.lamnare_orgnr %} <small>{{ p.lamnare_orgnr }}</small>{% endif %}</td></tr>
+  <tr><th>Från vilken plats</th><td>{{ p.fran_adress }}{% if p.fran_koordinat %} <span class="mono">{{ p.fran_koordinat }}</span>{% endif %}{% if p.fran_kommunkod %} <small>{{ p.fran_kommunkod|kommun }}</small>{% endif %}</td></tr>
+  <tr><th>Transportör</th><td>{{ p.transportor_namn }}{% if p.transportor_orgnr %} <small>{{ p.transportor_orgnr }}</small>{% endif %}</td></tr>
+  <tr><th>Fordon och förare</th><td>{{ p.fordon or '–' }}{% if p.forare %}, {{ p.forare }}{% endif %}</td></tr>
+{% endif %}
+  <tr><th>Mottagare</th><td>{{ p.mottagare_namn }}{% if p.mottagare_orgnr %} <small>{{ p.mottagare_orgnr }}</small>{% endif %}</td></tr>
+  <tr><th>Plats där avfallet ska hanteras</th><td>{{ p.till_adress }}{% if p.till_kommunkod %} <small>{{ p.till_kommunkod|kommun }}</small>{% endif %}</td></tr>
+{% if p.klassgrund_lista %}
+  <tr><th>Grund för bedömningen farligt</th><td><ul class="lista">{% for g in p.klassgrund_lista %}<li>{{ g }}</li>{% endfor %}</ul></td></tr>
+{% endif %}
+  <tr><th>Referens</th><td>{{ p.referens or '–' }}</td></tr>
+  <tr><th>Notering</th><td class="forformaterad">{{ p.notering or '–' }}</td></tr>
+</tbody></table>
+
+<div class="sida">
+<section class="panel">
+  <h3>Rapportering till avfallsregistret</h3>
+{% if not p.farligt %}
+  <p>Icke-farligt avfall rapporteras inte till avfallsregistret.</p>
+{% elif p.status == 'makulerad' %}
+  <p>Anteckningen är makulerad.</p>
+{% elif p.status == 'antecknad' %}
+  <p>Rapportera senast <b>{{ p.senast|dag }}</b>{% if p.dagar_kvar is not none %}, {% if p.forsenad %}<b class="varning">{{ -p.dagar_kvar }} dagar försenad</b>{% elif p.dagar_kvar == 0 %}<b>idag</b>{% else %}{{ p.dagar_kvar }} dagar kvar{% endif %}{% endif %}.</p>
+  <ol class="steg">
+    <li>Öppna <a href="https://www.naturvardsverket.se/verktyg-och-tjanster/e-tjanster/avfallsregistret/" target="_blank" rel="noopener">Naturvårdsverkets e-tjänst</a> och logga in med e-legitimation.</li>
+    <li>Välj ingången {% if p.roll == 'producent' %}avfallsproducent{% else %}transportör{% endif %} och för över uppgifterna från anteckningen.</li>
+    <li>Fyll i kvittensen här när rapporten är lämnad.</li>
+  </ol>
+  <form method="post" action="{{ url_for('app.status', aid=p.id) }}" class="stapel">
+    <input type="hidden" name="handling" value="rapporterad">
+    <label>Kvittens eller ärende-id från e-tjänsten<input type="text" name="nv_kvittens"></label>
+    <label>Rapporterad datum<input type="date" name="rapporterad_datum" value="{{ idag }}"></label>
+    <label>Rapporterad av, eller ombud<input type="text" name="rapporterad_av" class="av"></label>
+    <input type="hidden" name="av" class="av">
+    <button type="submit">Markera som rapporterad</button>
+  </form>
+{% else %}
+  <p>Rapporterad {{ p.rapporterad_datum|dag }}{% if p.rapporterad_av %} av {{ p.rapporterad_av }}{% endif %}.<br>Kvittens: <span class="mono">{{ p.nv_kvittens or '–' }}</span></p>
+  <form method="post" action="{{ url_for('app.status', aid=p.id) }}">
+    <input type="hidden" name="handling" value="aterta"><input type="hidden" name="av" class="av">
+    <button type="submit" class="sekundar">Ångra rapporterad</button>
+  </form>
+{% endif %}
+</section>
+
+<section class="panel">
+  <h3>Bilagor</h3>
+  <ul class="lista">
+  {% for b in bilagor %}<li><a href="{{ url_for('app.bilaga', bid=b.id) }}" target="_blank">{{ b.filnamn }}</a> <small>{{ b.tidpunkt }}{% if b.av %} · {{ b.av }}{% endif %}</small></li>
+  {% else %}<li class="tom">Inga bilagor. Lägg transportdokument och mottagarkvitto här.</li>{% endfor %}
+  </ul>
+  <form method="post" action="{{ url_for('app.ladda_upp', aid=p.id) }}" enctype="multipart/form-data" class="rad">
+    <input type="file" name="filer" multiple accept=".pdf,.jpg,.jpeg,.png,.heic,.webp"><input type="hidden" name="av" class="av">
+    <button type="submit" class="sekundar">Ladda upp</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h3>Historik</h3>
+  <ul class="lista historik">{% for h in historik %}<li><span class="mono">{{ h.tidpunkt }}</span> {{ h.handelse }}{% if h.av %} <small>{{ h.av }}</small>{% endif %}</li>{% endfor %}</ul>
+  <p><small>Antecknad {{ p.skapad }} · senast ändrad {{ p.andrad }}</small></p>
+{% if p.status != 'makulerad' %}
+  <details>
+    <summary>Makulera anteckningen</summary>
+    <form method="post" action="{{ url_for('app.status', aid=p.id) }}" class="stapel">
+      <input type="hidden" name="handling" value="makulera"><input type="hidden" name="av" class="av">
+      <label>Skäl<input type="text" name="skal" required></label>
+      <button type="submit" class="fara">Makulera</button>
+    </form>
+  </details>
+{% endif %}
+</section>
+</div>
+</div>
+{% endblock %}

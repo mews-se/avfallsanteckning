@@ -1,0 +1,42 @@
+[verksamhet]
+namn = "Bolaget AB"
+orgnr = "556xxx-xxxx"
+adress = "Gatan 1"
+postnummer = "117 55"
+ort = "Stockholm"
+kommun = "Stockholm"
+# arbetsställenummer hos SCB, krävs i rapporter som avfallsproducent
+cfar = ""
+# e-postadress som skrivs ut på den tomma blanketten, dit den fotograferade blanketten mejlas
+kontakt = ""
+
+[favoriter]
+# visas överst i kodväljaren
+koder = [
+  "13 02 08*",
+  "13 05 02*",
+  "13 07 01*",
+  "14 06 03*",
+  "15 02 02*",
+  "16 01 07*",
+  "16 01 13*",
+  "16 01 14*",
+  "16 06 01*",
+  "16 05 04*",
+  "08 01 11*",
+  "20 01 21*",
+]
+
+# arbetsställen att välja bland som plats där avfallet producerats;
+# CFAR är arbetsställets nummer hos SCB, tomt för en plats som inte är ett eget arbetsställe
+[[arbetsstallen]]
+namn = "Huvudkontor"
+adress = "Gatan 1, 117 55 Stockholm"
+kommun = "Stockholm"
+cfar = ""
+
+[[arbetsstallen]]
+namn = "Verkstaden"
+adress = "Vägen 2, 142 50 Skogås"
+kommun = "Huddinge"
+cfar = ""

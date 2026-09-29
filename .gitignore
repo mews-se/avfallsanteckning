@@ -1,0 +1,9 @@
+__pycache__/
+.ruff_cache/
+*.pyc
+.venv/
+/data/
+/config.toml
+*.db
+*.db-wal
+*.db-shm

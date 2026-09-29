@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block titel %}{% if aid %}Redigera {{ varden.lopnr }}{% else %}Ny anteckning{% endif %} · Avfallsanteckning{% endblock %}
+{% block innehall %}
+<h2>{% if aid %}Redigera anteckning {{ varden.lopnr }}{% else %}Ny anteckning{% endif %} <span class="roll">{{ ROLLER[roll] }}</span></h2>
+<p class="hjalp">{{ hjalp }} {{ GRUND[roll] }}. Anteckningen ska vara förd innan transporten påbörjas och rapporteras till Naturvårdsverkets avfallsregister senast två arbetsdagar efter transportdatumet.</p>
+<form method="post" class="panel formular" autocomplete="off">
+<fieldset>
+  <legend>Avfall</legend>
+  <div class="falt bred kodvaljare">
+    <label for="kodsok">Avfallskod enligt bilaga 3</label>
+    <div class="kodvalt" id="kodvalt">{% if varden.avfallskod %}<b class="mono">{{ varden.avfallskod }}</b> {{ varden.avfallstyp }}{% else %}<span class="tom">Ingen kod vald</span>{% endif %}</div>
+    <input type="hidden" name="avfallskod" id="avfallskod" value="{{ varden.avfallskod or '' }}">
+    <input type="text" id="kodsok" placeholder="Sök på kod eller ord, t.ex. 13 02 eller spillolja" data-url="{{ url_for('app.koder_json') }}" data-favoriter='{{ favoriter }}'>
+    <ul class="kodlista" id="kodlista" hidden></ul>
+    <label class="rad"><input type="checkbox" id="visa_ickefarliga"> visa även icke-farliga koder</label>
+  </div>
+  <div class="falt">
+    <label for="vikt_kg">Vikt i kilogram</label>
+    <input type="text" inputmode="decimal" name="vikt_kg" id="vikt_kg" value="{{ varden.vikt_kg or '' }}" required>
+    <label class="rad"><input type="checkbox" name="vikt_uppskattad" value="1"{% if varden.vikt_uppskattad %} checked{% endif %}> uppskattad, rättas efter mottagarens vägning</label>
+  </div>
+</fieldset>
+
+<fieldset>
+  <legend>Transport</legend>
+  <div class="falt"><label>{% if roll == 'producent' %}Datum för borttransport{% else %}Datum för transport{% endif %}</label><input type="date" name="transportdatum" value="{{ varden.transportdatum }}" required></div>
+  <div class="falt"><label>Transportsätt</label><select name="transportsatt">{% for t in TRANSPORTSATT %}<option{% if t == varden.transportsatt %} selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+{% if roll == 'producent' %}
+  <div class="falt bred"><label>Var avfallet producerats, arbetsställe</label>
+    <select name="arbetsstalle" class="partval" data-mal="arbetsstalle">
+      <option value="">annan plats, skriv in nedan</option>
+      {% for s in arbetsstallen %}<option value="{{ loop.index0 }}"{% if varden.arbetsstalle == loop.index0|string %} selected{% endif %}>{{ s.namn }}{% if s.adress %}, {{ s.adress }}{% endif %}{% if s.cfar %} (CFAR {{ s.cfar }}){% endif %}</option>{% endfor %}
+    </select></div>
+  <div class="falt bred partfri" data-for="arbetsstalle"><label>Adress</label><input type="text" name="fran_adress" value="{{ varden.fran_adress }}"></div>
+  <div class="falt partfri" data-for="arbetsstalle"><label>Kommun</label><input type="text" name="fran_kommun" list="kommuner" value="{{ varden.fran_kommun }}"></div>
+  <div class="falt"><label>Transportör</label>
+    <select name="transportor_id" class="partval" data-mal="transportor">
+      <option value="">annan, skriv in nedan</option>
+      {% for t in transportorer %}<option value="{{ t.id }}"{% if t.orgnr and t.orgnr == varden.transportor_orgnr %} selected{% endif %}>{{ t.namn }}{% if t.orgnr %} ({{ t.orgnr }}){% endif %}</option>{% endfor %}
+    </select></div>
+  <div class="falt partfri" data-for="transportor"><label>Transportörens namn</label><input type="text" name="transportor_namn" value="{{ varden.transportor_namn }}"></div>
+  <div class="falt partfri" data-for="transportor"><label>Transportörens org.nr</label><input type="text" name="transportor_orgnr" value="{{ varden.transportor_orgnr }}"></div>
+{% else %}
+  <div class="falt"><label>Från vem, producent</label><input type="text" name="lamnare_namn" value="{{ varden.lamnare_namn }}"></div>
+  <div class="falt"><label>Producentens org.nr om känt</label><input type="text" name="lamnare_orgnr" value="{{ varden.lamnare_orgnr }}"></div>
+  <div class="falt bred"><label>Från vilken plats, adress eller vägbeskrivning</label><input type="text" name="fran_adress" value="{{ varden.fran_adress }}"></div>
+  <div class="falt"><label>Koordinat, lat och long, om adress saknas</label><input type="text" name="fran_koordinat" value="{{ varden.fran_koordinat }}"></div>
+  <div class="falt"><label>Kommun där avfallet hämtades</label><input type="text" name="fran_kommun" list="kommuner" value="{{ varden.fran_kommun }}"></div>
+  <div class="falt"><label>Fordon, reg.nr</label><input type="text" name="fordon" value="{{ varden.fordon }}"></div>
+  <div class="falt"><label>Förare</label><input type="text" name="forare" value="{{ varden.forare }}"></div>
+{% endif %}
+</fieldset>
+
+<fieldset>
+  <legend>Mottagare</legend>
+  <div class="falt"><label>Mottagare</label>
+    <select name="mottagare_id" class="partval" data-mal="mottagare">
+      <option value="">annan, skriv in nedan</option>
+      {% for m in mottagare %}<option value="{{ m.id }}" data-adress="{{ m.adress }}" data-kommun="{{ m.kommunkod|kommunnamn }}"{% if m.orgnr and m.orgnr == varden.mottagare_orgnr %} selected{% endif %}>{{ m.namn }}{% if m.orgnr %} ({{ m.orgnr }}){% endif %}</option>{% endfor %}
+    </select></div>
+  <div class="falt partfri" data-for="mottagare"><label>Mottagarens namn</label><input type="text" name="mottagare_namn" value="{{ varden.mottagare_namn }}"></div>
+  <div class="falt partfri" data-for="mottagare"><label>Mottagarens org.nr</label><input type="text" name="mottagare_orgnr" value="{{ varden.mottagare_orgnr }}"></div>
+  <div class="falt bred"><label>Plats där avfallet ska hanteras, adress</label><input type="text" name="till_adress" id="till_adress" value="{{ varden.till_adress }}"></div>
+  <div class="falt"><label>Kommun</label><input type="text" name="till_kommun" id="till_kommun" list="kommuner" value="{{ varden.till_kommun }}"></div>
+</fieldset>
+<datalist id="kommuner">{% for k in kommuner %}<option value="{{ k.namn }}">{% endfor %}</datalist>
+
+{% if roll == 'transportor' %}
+<fieldset>
+  <legend>Grund för bedömningen att avfallet är farligt</legend>
+  {% for nyckel, text in KLASSGRUNDER %}<label class="rad"><input type="checkbox" name="klassgrund" value="{{ nyckel }}"{% if nyckel in varden.klassgrund %} checked{% endif %}> {{ text }}</label>{% endfor %}
+</fieldset>
+{% endif %}
+
+<fieldset>
+  <legend>Övrigt</legend>
+  <div class="falt"><label>Referens, ordernummer eller händelse</label><input type="text" name="referens" value="{{ varden.referens }}"></div>
+  <div class="falt"><label>Antecknad av</label><input type="text" name="av" class="av" value="{{ varden.av }}"></div>
+  <div class="falt bred"><label>Notering</label><textarea name="notering" rows="2">{{ varden.notering }}</textarea></div>
+</fieldset>
+<div class="knappar">
+  <button type="submit">{% if aid %}Spara ändringar{% else %}Spara anteckning{% endif %}</button>
+  <a href="{% if aid %}{{ url_for('app.visa', aid=aid) }}{% else %}{{ url_for('app.index') }}{% endif %}">Avbryt</a>
+</div>
+</form>
+{% endblock %}

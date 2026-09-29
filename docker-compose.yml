@@ -1,0 +1,12 @@
+services:
+  avfallsanteckning:
+    build: .
+    image: avfallsanteckning
+    container_name: avfallsanteckning
+    init: true
+    restart: unless-stopped
+    ports:
+      - "8400:8400"
+    volumes:
+      - ./data:/data
+      - ./config.toml:/config.toml:ro

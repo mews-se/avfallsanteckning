@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block innehall %}
+<div class="chips">
+  <span class="chip">Anteckningar {{ ar }} <b>{{ stat.antal }}</b></span>
+  <span class="chip">Att rapportera <b>{{ stat.att_rapportera }}</b></span>
+  <span class="chip{% if stat.forsenade %} varning{% endif %}">Försenade <b>{{ stat.forsenade }}</b></span>
+</div>
+<form method="get" action="{{ url_for('app.index') }}" class="filter">
+  <label>År<select name="ar">
+    {% for a in ar_lista %}<option value="{{ a }}"{% if a == ar %} selected{% endif %}>{{ a }}</option>{% endfor %}
+    <option value="alla"{% if ar == 'alla' %} selected{% endif %}>Alla</option>
+  </select></label>
+  <label>Roll<select name="roll"><option value="">Alla</option>
+    {% for k, n in ROLLER.items() %}<option value="{{ k }}"{% if k == roll %} selected{% endif %}>{{ n }}</option>{% endfor %}
+  </select></label>
+  <label>Status<select name="status"><option value="">Alla</option>
+    {% for k, n in STATUS.items() %}<option value="{{ k }}"{% if k == status %} selected{% endif %}>{{ n }}</option>{% endfor %}
+  </select></label>
+  <button type="submit">Visa</button><a href="{{ url_for('app.index') }}">Rensa</a>
+</form>
+<table>
+<thead><tr><th>Löpnr</th><th>Roll</th><th>Transport</th><th>Avfall</th><th class="r">Vikt</th><th>Mottagare</th><th>Rapportera senast</th><th>Status</th></tr></thead>
+<tbody>
+{% for p in rader %}
+<tr class="{% if p.forsenad %}forsenad{% elif p.dagar_kvar is not none and p.dagar_kvar <= 1 %}snart{% endif %}">
+  <td class="mono"><a href="{{ url_for('app.visa', aid=p.id) }}">{{ p.lopnr }}</a></td>
+  <td>{{ ROLLER[p.roll] }}</td>
+  <td class="mono">{{ p.transportdatum }}</td>
+  <td class="wrap"><span class="mono">{{ p.avfallskod }}</span> {{ p.avfallstyp }}</td>
+  <td class="r mono">{{ p.vikt_kg|vikt }} kg</td>
+  <td class="wrap">{{ p.mottagare_namn }}</td>
+  <td class="mono">{% if p.senast %}{{ p.senast }}{% if p.dagar_kvar is not none %}<small>{% if p.forsenad %}{{ -p.dagar_kvar }} d försenad{% elif p.dagar_kvar == 0 %}idag{% else %}{{ p.dagar_kvar }} d kvar{% endif %}</small>{% endif %}{% else %}–{% endif %}</td>
+  <td><span class="status {{ p.status }}">{{ STATUS[p.status] }}</span></td>
+</tr>
+{% else %}
+<tr><td colspan="8" class="empty">Inga anteckningar.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}

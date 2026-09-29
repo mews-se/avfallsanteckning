@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titel %}Parter · Avfallsanteckning{% endblock %}
+{% block innehall %}
+<h2>Parter</h2>
+<p class="hjalp">Transportörer och mottagare som återkommer i anteckningarna. Org.nr, adress och kommun följer med in i anteckningen och i rapporten till avfallsregistret.</p>
+{% for p in parter %}<form id="part{{ p.id }}" method="post" action="{{ url_for('app.parter') }}"><input type="hidden" name="id" value="{{ p.id }}"></form>{% endfor %}
+<form id="partny" method="post" action="{{ url_for('app.parter') }}"></form>
+<datalist id="kommuner">{% for k in kommuner %}<option value="{{ k.namn }}">{% endfor %}</datalist>
+<table>
+<thead><tr><th>Namn</th><th>Org.nr</th><th>Adress</th><th>Kommun</th><th>Roll</th><th>Aktiv</th><th></th></tr></thead>
+<tbody>
+{% for p in parter %}
+<tr>
+  <td><input type="text" name="namn" form="part{{ p.id }}" value="{{ p.namn }}" required></td>
+  <td><input type="text" name="orgnr" form="part{{ p.id }}" value="{{ p.orgnr }}"></td>
+  <td><input type="text" name="adress" form="part{{ p.id }}" value="{{ p.adress }}" class="lang"></td>
+  <td><input type="text" name="kommun" form="part{{ p.id }}" value="{{ p.kommunkod|kommunnamn }}" list="kommuner"></td>
+  <td><select name="roll" form="part{{ p.id }}">
+    <option value="bada"{% if p.roll == 'bada' %} selected{% endif %}>Båda</option>
+    <option value="transportor"{% if p.roll == 'transportor' %} selected{% endif %}>Transportör</option>
+    <option value="mottagare"{% if p.roll == 'mottagare' %} selected{% endif %}>Mottagare</option>
+  </select></td>
+  <td><input type="checkbox" name="aktiv" form="part{{ p.id }}" value="1"{% if p.aktiv %} checked{% endif %}></td>
+  <td><button type="submit" form="part{{ p.id }}" class="sekundar">Spara</button></td>
+</tr>
+{% else %}
+<tr><td colspan="7" class="empty">Inga parter ännu.</td></tr>
+{% endfor %}
+<tr class="ny">
+  <td><input type="text" name="namn" form="partny" placeholder="Ny part" required></td>
+  <td><input type="text" name="orgnr" form="partny" placeholder="556xxx-xxxx"></td>
+  <td><input type="text" name="adress" form="partny" placeholder="Gata, postnr ort" class="lang"></td>
+  <td><input type="text" name="kommun" form="partny" list="kommuner"></td>
+  <td><select name="roll" form="partny"><option value="bada">Båda</option><option value="transportor">Transportör</option><option value="mottagare">Mottagare</option></select></td>
+  <td><input type="checkbox" name="aktiv" form="partny" value="1" checked></td>
+  <td><button type="submit" form="partny">Lägg till</button></td>
+</tr>
+</tbody>
+</table>
+{% endblock %}
