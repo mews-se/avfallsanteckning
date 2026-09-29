@@ -6,7 +6,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from .texter import GRUND, KLASSGRUNDER, ROLLER, STATUS
+from .texter import GRUND, ROLLER, STATUS
 from .tid import stampel
 
 # sidbredd minus marginaler och ramens egen indragning om 6 pt per sida
@@ -217,24 +217,27 @@ def transportdokument(p, inst):
 
 
 def blankett(inst):
-    v = inst["verksamhet"]
+    v, t = inst["verksamhet"], inst["transportor"]
     rader = _transportrader(None)
     rader[5] = ("Transportör", _part(v["namn"], v["orgnr"]))
+    rader[6] = ("Producent", t["blankett_producent"])
     rader.insert(7, ("Fordon och förare", ""))
     rader.append(("Referens, händelse eller uppdrag", ""))
-    tabell = _tabell(rader, tom=True)
-    kryss = "<br/>".join(f"[  ] {_t(text)}" for _, text in KLASSGRUNDER)
-    bedomning = [
-        Paragraph("Bedömning på plats", AVSNITT),
-        Paragraph(
-            "Transportdokument upprättas när avfallet bedöms som farligt avfall. Kryssa den eller de "
-            "omständigheter som ligger till grund för bedömningen.",
-            ETIKETT,
-        ),
-        Spacer(1, 2 * mm),
-        Paragraph(kryss, TEXT),
-    ]
-    delar = [Paragraph("Transporten", AVSNITT), tabell, *bedomning, _underskrifter()]
+    delar = [Paragraph("Transporten", AVSNITT), _tabell(rader, tom=True)]
+    if t["bedomningsgrunder"]:
+        kryss = "<br/>".join(f"[  ] {_t(g)}" for g in t["bedomningsgrunder"])
+        delar += [
+            Paragraph("Bedömning på plats", AVSNITT),
+            Paragraph(
+                "Transportdokument upprättas när avfallet bedöms som farligt avfall. Kryssa den eller de "
+                "omständigheter som ligger till grund för bedömningen.",
+                ETIKETT,
+            ),
+            Spacer(1, 2 * mm),
+            Paragraph(kryss, TEXT),
+        ]
+    # en förtryckt producent har ingen som skriver under
+    delar.append(_underskrifter(producent=not t["blankett_producent"]))
     delar.append(Spacer(1, 4 * mm))
     if v["kontakt"]:
         instruktion = f"<b>Fotografera den ifyllda blanketten och mejla bilden omgående till {_t(v['kontakt'])}.</b>"
@@ -248,5 +251,6 @@ def blankett(inst):
         )
     )
     sidfot = f"Avfallsanteckning · tom blankett utskriven {stampel()}"
-    under = "Tom blankett att fylla i för hand · 6 kap. 19 § avfallsförordningen (2020:614)"
+    beskrivning = t["blankett_beskrivning"] or "Blankett att fylla i för hand"
+    under = f"{beskrivning} · 6 kap. 19 § avfallsförordningen (2020:614)"
     return _bygg("Transportdokument för farligt avfall", under, inst, delar, sidfot)

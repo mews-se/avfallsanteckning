@@ -65,10 +65,10 @@
 </fieldset>
 <datalist id="kommuner">{% for k in kommuner %}<option value="{{ k.namn }}">{% endfor %}</datalist>
 
-{% if roll == 'transportor' %}
+{% if roll == 'transportor' and grunder %}
 <fieldset>
   <legend>Grund för bedömningen att avfallet är farligt</legend>
-  {% for nyckel, text in KLASSGRUNDER %}<label class="rad"><input type="checkbox" name="klassgrund" value="{{ nyckel }}"{% if nyckel in varden.klassgrund %} checked{% endif %}> {{ text }}</label>{% endfor %}
+  {% for g in grunder %}<label class="rad"><input type="checkbox" name="klassgrund" value="{{ g }}"{% if g in varden.klassgrund %} checked{% endif %}> {{ g }}</label>{% endfor %}
 </fieldset>
 {% endif %}
 

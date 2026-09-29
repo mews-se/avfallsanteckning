@@ -1,7 +1,10 @@
+import base64
 import io
 import json
+import re
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 
 from avfallsanteckning import create_app
@@ -22,6 +25,9 @@ koder = ["13 02 08*", "16 01 07*"]
 
 [transportor]
 aktiv = true
+blankett_beskrivning = "Avfall som hittats vid vägen"
+blankett_producent = "Okänd, avfallet är upphittat"
+bedomningsgrunder = ["Spill av olja eller kemikalier", "Osäker bedömning, hanteras som farligt"]
 
 [[arbetsstallen]]
 namn = "Verkstaden"
@@ -64,13 +70,28 @@ TRANSPORTOR = {
     "fran_adress": "E4 norrgående vid Hallunda",
     "fran_koordinat": "59.2432, 17.8266",
     "fran_kommun": "Botkyrka",
-    "klassgrund": ["spill", "osakert"],
+    "klassgrund": ["Spill av olja eller kemikalier", "Osäker bedömning, hanteras som farligt"],
     "mottagare_namn": "Mottagning AB",
     "mottagare_orgnr": "556222-2222",
     "till_adress": "Deponivägen 9, 136 50 Jordbro",
     "fordon": "ABC 123",
     "forare": "Bo",
 }
+
+
+def pdf_text(data):
+    # reportlab skriver sidorna som ascii85 + flate
+    delar = []
+    for m in re.finditer(rb"stream\r?\n(.*?)endstream", data, re.S):
+        del_ = m.group(1).strip()
+        if del_.endswith(b"~>"):
+            del_ = base64.a85decode(del_[:-2])
+        try:
+            del_ = zlib.decompress(del_)
+        except zlib.error:
+            pass
+        delar.append(del_)
+    return b"".join(delar)
 
 
 class AppCase(unittest.TestCase):
@@ -293,6 +314,27 @@ class TransportorTest(AppCase):
         self.assertEqual(klient.get("/ny/transportor").status_code, 404)
         self.assertEqual(klient.get("/transportdokument.pdf").status_code, 404)
         self.assertEqual(klient.get("/ny/producent").status_code, 200)
+
+    def test_grunder_och_blankett_fran_config(self):
+        text = self.klient.get("/ny/transportor").data.decode()
+        self.assertIn('value="Spill av olja eller kemikalier"', text)
+        pdf = pdf_text(self.klient.get("/transportdokument.pdf").data)
+        self.assertIn(b"upphittat", pdf)
+        self.assertIn(b"hittats vid v", pdf)
+        self.assertIn(b"Spill av olja", pdf)
+        self.assertEqual(pdf.count(b"Namnf"), 1)
+        katalog = Path(self.tmp.name)
+        konfig = re.sub(r"^(blankett_\w+|bedomningsgrunder) = .*\n", "", KONFIG, flags=re.M)
+        (katalog / "enkel.toml").write_text(konfig, encoding="utf-8")
+        app = create_app(config_path=katalog / "enkel.toml", data_dir=katalog / "enkel")
+        klient = app.test_client()
+        self.assertNotIn("Grund för bedömningen", klient.get("/ny/transportor").data.decode())
+        svar = klient.post("/ny/transportor", data={**TRANSPORTOR, "klassgrund": []})
+        self.assertEqual(svar.status_code, 302, svar.data.decode())
+        pdf = pdf_text(klient.get("/transportdokument.pdf").data)
+        self.assertNotIn(b"upphittat", pdf)
+        self.assertNotIn(b"Kryssa", pdf)
+        self.assertEqual(pdf.count(b"Namnf"), 2)
 
 
 class ParterTest(AppCase):

@@ -20,14 +20,3 @@ TRANSPORTSATT = [
     "Inlandssjöfart",
     "Rörledning",
 ]
-
-KLASSGRUNDER = [
-    ("spill", "Större eller koncentrerat kemikalie-, olje- eller bränslespill"),
-    ("amnen", "Tydlig förekomst av farliga ämnen"),
-    ("behallare", "Batterier, elkomponenter eller kemikaliebehållare"),
-    ("lukt", "Tydlig kemikalielukt eller identifierbar farlig produkt"),
-    ("myndighet", "Uppgift från räddningstjänst eller annan ansvarig myndighet"),
-    ("osakert", "Osäker bedömning på plats: hanteras som farligt avfall tills motsatsen kan konstateras"),
-]
-
-KLASSGRUND_TEXT = dict(KLASSGRUNDER)

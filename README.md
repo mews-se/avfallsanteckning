@@ -85,6 +85,9 @@ datakatalogen så visas den i sidhuvudet i stället för verksamhetens namn.
 
     [transportor]
     aktiv = true
+    blankett_beskrivning = "Avfall som hämtas hos kund"
+    blankett_producent = ""
+    bedomningsgrunder = ["Tydlig förekomst av farliga ämnen", "Osäker bedömning"]
 
     [[arbetsstallen]]
     namn = "Huvudkontor"
@@ -98,9 +101,14 @@ varsitt CFAR-nummer; lämna det tomt för en plats som inte är ett eget
 arbetsställe. Utan listan används verksamhetens adress och CFAR-nummer.
 `transportor` slår på anteckningar som transportör och den tomma
 blanketten, för verksamheter som själva transporterar farligt avfall.
-Utan sektionen finns bara producentsidan. `kontakt` skrivs ut på den
-tomma blanketten som den adress dit den fotograferade blanketten ska
-mejlas.
+Utan sektionen finns bara producentsidan. `blankett_beskrivning` skrivs
+under blankettens rubrik. `blankett_producent` förtrycker producenten på
+blanketten, till exempel att den är okänd när avfallet är upphittat; utan
+texten finns en ifyllningsrad och producentens underskrift.
+`bedomningsgrunder` är omständigheterna att kryssa i, på blanketten och i
+transportörsanteckningen, som grund för att avfallet bedömts som farligt;
+med en tom lista finns inget sådant avsnitt. `kontakt` skrivs ut på
+blanketten som den adress dit den fotograferade blanketten ska mejlas.
 
 ## Avfallskoder och kommuner
 

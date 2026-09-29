@@ -23,7 +23,7 @@ from werkzeug.utils import secure_filename
 
 from . import db, pdf
 from .arbetsdagar import rapportera_senast
-from .texter import GRUND, KLASSGRUND_TEXT, KLASSGRUNDER, ROLL_HJALP, ROLLER, STATUS, TRANSPORTSATT
+from .texter import GRUND, ROLL_HJALP, ROLLER, STATUS, TRANSPORTSATT
 from .tid import idag, stampel
 
 bp = Blueprint("app", __name__)
@@ -96,7 +96,7 @@ def berika(rad):
     kommuner = current_app.config["KOMMUNER"]
     p["fran_kommun"] = kommuner.namn(p["fran_kommunkod"])
     p["till_kommun"] = kommuner.namn(p["till_kommunkod"])
-    p["klassgrund_lista"] = [KLASSGRUND_TEXT.get(k, k) for k in json.loads(p["klassgrund"] or "[]")]
+    p["klassgrund_lista"] = json.loads(p["klassgrund"] or "[]")
     p["senast"] = p["dagar_kvar"] = None
     p["forsenad"] = False
     if p["farligt"] and p["status"] != "makulerad":
@@ -141,7 +141,7 @@ def _formkontext(conn, roll):
         "transportorer": db.parter(conn, "transportor"),
         "mottagare": db.parter(conn, "mottagare"),
         "TRANSPORTSATT": TRANSPORTSATT,
-        "KLASSGRUNDER": KLASSGRUNDER,
+        "grunder": current_app.config["INST"]["transportor"]["bedomningsgrunder"],
         "kommuner": current_app.config["KOMMUNER"].lista,
         "arbetsstallen": current_app.config["INST"]["arbetsstallen"],
         "favoriter": json.dumps(current_app.config["INST"]["favoriter"]["koder"]),
@@ -233,7 +233,8 @@ def _las_formular(roll, form, conn):
     transportsatt = form.get("transportsatt", TRANSPORTSATT[0])
     if transportsatt not in TRANSPORTSATT:
         fel.append("Ogiltigt transportsätt.")
-    klassgrund = [k for k in form.getlist("klassgrund") if k in KLASSGRUND_TEXT]
+    grunder = current_app.config["INST"]["transportor"]["bedomningsgrunder"]
+    klassgrund = [k for k in form.getlist("klassgrund") if k in grunder]
     text = {k: form.get(k, "").strip() for k in db.FALT}
     data = {
         **text,
@@ -282,7 +283,7 @@ def _las_formular(roll, form, conn):
             fel.append("Ange platsen där avfallet hämtades, som adress eller koordinat.")
         if not fran_kommun:
             fel.append("Ange kommunen där avfallet hämtades.")
-        if data["farligt"] and not klassgrund:
+        if data["farligt"] and grunder and not klassgrund:
             fel.append("Ange minst en grund för att avfallet bedömts som farligt.")
     return data, fel
 

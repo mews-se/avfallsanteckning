@@ -14,7 +14,7 @@ STANDARD = {
         "kontakt": "",
     },
     "favoriter": {"koder": []},
-    "transportor": {"aktiv": False},
+    "transportor": {"aktiv": False, "blankett_beskrivning": "", "blankett_producent": "", "bedomningsgrunder": []},
 }
 
 ARBETSSTALLE = {"namn": "", "adress": "", "kommun": "", "cfar": ""}
