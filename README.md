@@ -45,11 +45,20 @@ i tid ligger hos verksamheten.
 
 ## Köra
 
-    cp config.example.toml config.toml
+Med Docker, utan att klona repot:
+
+    mkdir avfallsanteckning && cd avfallsanteckning
+    curl -O https://raw.githubusercontent.com/mews-se/avfallsanteckning/main/docker-compose.yml
+    curl -o config.toml https://raw.githubusercontent.com/mews-se/avfallsanteckning/main/config.example.toml
     docker compose up -d
 
-Sidan svarar på port 8400. `./data` innehåller databasen och bilagorna och
-är det som ska säkerhetskopieras. Anteckningar ska sparas i minst tre år.
+Fyll i `config.toml` med verksamhetens uppgifter först. Bilden
+`ghcr.io/mews-se/avfallsanteckning` byggs för amd64 och arm64 och följer
+`main`; `docker compose pull && docker compose up -d` uppdaterar. Sidan
+svarar på port 8400. `./data` innehåller databasen och bilagorna och är
+det som ska säkerhetskopieras. Anteckningar ska sparas i minst tre år.
+
+Från källkoden byggs samma bild med `docker build -t avfallsanteckning .`.
 
 Utan Docker:
 

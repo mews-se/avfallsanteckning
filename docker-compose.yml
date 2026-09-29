@@ -1,7 +1,6 @@
 services:
   avfallsanteckning:
-    build: .
-    image: avfallsanteckning
+    image: ghcr.io/mews-se/avfallsanteckning:latest
     container_name: avfallsanteckning
     init: true
     restart: unless-stopped

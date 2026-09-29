@@ -24,3 +24,23 @@ jobs:
 
       - name: Test
         run: python -m unittest discover -s tests -v
+
+  image:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        run: docker build -t avfallsanteckning:ci .
+
+      - name: Starts and serves
+        run: |
+          docker run -d --name app -p 8400:8400 -v "$PWD/ci-data:/data" \
+            -v "$PWD/config.example.toml:/config.toml:ro" avfallsanteckning:ci
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8400/healthz && exit 0
+            sleep 2
+          done
+          docker logs app
+          exit 1
