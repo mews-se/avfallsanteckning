@@ -23,7 +23,9 @@ och en katalog med bilagor. Gränssnittet är på svenska.
 - **Avfallskoder** ur bilaga 3 i en sökbar lista, med verksamhetens vanliga
   koder överst. Farliga koder är förvalda, icke-farliga kan visas.
 - **Kommuner** anges med namn. SCB:s kommunlista ligger i appen och sätter
-  kommunkoden, som avfallsregistret vill ha när producenten är okänd.
+  kommunkoden, som avfallsregistret vill ha när producenten är okänd. Ges
+  en koordinat utan kommun slås kommunen upp i SCB:s kommungränser, som
+  också ligger i appen.
 - **Tidsfrist**: transportdatum plus två arbetsdagar, med svenska helgdagar
   och regeln om aftnar i lag (1930:173). Försenade anteckningar markeras på
   startsidan och listas på `/api/forfallna` för övervakning.
@@ -106,7 +108,10 @@ ur förordningstexten i riksdagens öppna data (källa: Sveriges riksdag). Kör
 skriptet igen när bilaga 3 ändras; ändringar med senare ikraftträdande ligger
 redan i listan med sina datum. `avfallsanteckning/data/kommuner.json` byggs
 av `tools/kommuner.py` ur SCB:s lista över kommuner i kodnummerordning
-(källa: SCB).
+(källa: SCB). `avfallsanteckning/data/kommungranser.json` byggs av
+`tools/kommungranser.py` ur SCB:s digitala kommungränser (CC0, källa:
+SCB), förenklade till några meter; nära en gräns kan uppslaget bli fel,
+och fältet går alltid att ändra.
 
 ## Tester
 
