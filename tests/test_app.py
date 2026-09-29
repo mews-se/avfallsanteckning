@@ -290,7 +290,8 @@ class DokumentTest(AppCase):
         text = self.klient.get(f"/anteckning/{aid}").data.decode()
         self.assertIn("transportdokument åäö.pdf", text)
         bid = int(text.split("/bilaga/")[1].split('"')[0])
-        self.assertEqual(self.klient.get(f"/bilaga/{bid}").data, b"%PDF-1.4 test")
+        with self.klient.get(f"/bilaga/{bid}") as svar:
+            self.assertEqual(svar.data, b"%PDF-1.4 test")
         data = {"filer": (io.BytesIO(b"x"), "fel.exe")}
         svar = self.klient.post(
             f"/anteckning/{aid}/bilaga", data=data, content_type="multipart/form-data", follow_redirects=True
@@ -365,9 +366,9 @@ class ParterTest(AppCase):
         self.assertNotIn("/logotyp", text)
         self.assertIn("<small>Testbolaget AB</small>", text)
         (Path(self.tmp.name) / "data" / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-        svar = self.klient.get("/logotyp")
-        self.assertEqual(svar.status_code, 200)
-        self.assertEqual(svar.mimetype, "image/png")
+        with self.klient.get("/logotyp") as svar:
+            self.assertEqual(svar.status_code, 200)
+            self.assertEqual(svar.mimetype, "image/png")
         text = self.klient.get("/").data.decode()
         self.assertIn('src="/logotyp"', text)
         self.assertNotIn("<small>Testbolaget AB</small>", text)
