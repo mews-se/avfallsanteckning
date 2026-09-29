@@ -34,19 +34,6 @@
     });
   });
 
-  // kommunen följer av koordinaten tills någon skriver in den för hand
-  var koordinat = document.getElementById("fran_koordinat");
-  var kommun = document.getElementById("fran_kommun");
-  if (koordinat && kommun) {
-    koordinat.addEventListener("change", function () {
-      if (!koordinat.value.trim() || (kommun.value && !kommun.dataset.auto)) return;
-      fetch(koordinat.dataset.url + "?koordinat=" + encodeURIComponent(koordinat.value))
-        .then(function (r) { return r.json(); })
-        .then(function (d) { if (d.namn) { kommun.value = d.namn; kommun.dataset.auto = "1"; } });
-    });
-    kommun.addEventListener("input", function () { delete kommun.dataset.auto; });
-  }
-
   var sok = document.getElementById("kodsok");
   if (!sok) return;
   var dold = document.getElementById("avfallskod");

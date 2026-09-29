@@ -4,7 +4,7 @@ from pathlib import Path
 
 from flask import Flask
 
-from . import db, koder, kommuner, kommungranser
+from . import db, koder, kommuner
 
 __version__ = "0.1.0"
 
@@ -20,7 +20,6 @@ def create_app(data_dir=None):
         DB_PATH=data / "avfallsanteckning.db",
         KODER=koder.Koder.load(),
         KOMMUNER=kommuner.Kommuner.load(),
-        GRANSER=kommungranser.Kommungranser.load(),
         VERSION=__version__,
     )
     db.init(app.config["DB_PATH"])

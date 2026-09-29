@@ -126,16 +126,6 @@ class FormularTest(AppCase):
         self.assertIn("Välj en avfallskod", text)
         self.assertIn("Ange vikt", text)
 
-    def test_kommun_fran_koordinat(self):
-        aid = self.skapa("transportor", {**TRANSPORTOR, "fran_kommun": ""})
-        self.assertIn("Botkyrka (0127)", self.klient.get(f"/anteckning/{aid}").data.decode())
-        till_havs = {**TRANSPORTOR, "fran_kommun": "", "fran_koordinat": "58.0, 19.5"}
-        svar = self.klient.post("/ny/transportor", data=till_havs)
-        self.assertIn("Ange kommunen", svar.data.decode())
-        svar = json.loads(self.klient.get("/kommun.json?koordinat=59.2432,%2017.8266").data)
-        self.assertEqual(svar, {"kod": "0127", "namn": "Botkyrka"})
-        self.assertEqual(json.loads(self.klient.get("/kommun.json?koordinat=x").data), {})
-
     def test_orgnr_kontrolleras(self):
         svar = self.klient.post("/ny/producent", data={**PRODUCENT, "transportor_orgnr": "556111-1111"})
         self.assertIn("Ogiltigt org.nr: 556111-1111", svar.data.decode())
@@ -153,7 +143,7 @@ class FormularTest(AppCase):
         text = self.klient.get(f"/anteckning/{aid}").data.decode()
         self.assertNotIn("Stockholm (0180)", text)
         self.assertIn("Haninge (0136)", text)
-        svar = self.klient.post("/ny/transportor", data={**TRANSPORTOR, "fran_kommun": "", "fran_koordinat": ""})
+        svar = self.klient.post("/ny/transportor", data={**TRANSPORTOR, "fran_kommun": ""})
         self.assertIn("Ange kommunen", svar.data.decode())
         csv = self.klient.get("/export.csv?ar=2026").data.decode("utf-8-sig")
         self.assertIn(";0136;", csv)

@@ -291,9 +291,7 @@ def _las_formular(roll, form, conn):
         data["lamnare_namn"] = text["lamnare_namn"] or "Okänd"
         if not data["fran_adress"] and not data["fran_koordinat"]:
             fel.append("Ange platsen där avfallet hämtades, som adress eller koordinat.")
-        if not fran_kommun and data["fran_koordinat"]:
-            data["fran_kommunkod"] = current_app.config["GRANSER"].kod(data["fran_koordinat"]) or ""
-        if not data["fran_kommunkod"]:
+        if not fran_kommun:
             fel.append("Ange kommunen där avfallet hämtades.")
         if data["farligt"] and grunder and not klassgrund:
             fel.append("Ange minst en grund för att avfallet bedömts som farligt.")
@@ -458,12 +456,6 @@ def blankett():
     if not inst()["transportor"]["aktiv"]:
         abort(404)
     return _pdf(pdf.blankett(inst()), "transportdokument-blankett.pdf")
-
-
-@bp.get("/kommun.json")
-def kommun_json():
-    kod = current_app.config["GRANSER"].kod(request.args.get("koordinat", ""))
-    return jsonify({"kod": kod, "namn": current_app.config["KOMMUNER"].namn(kod)} if kod else {})
 
 
 @bp.get("/koder.json")

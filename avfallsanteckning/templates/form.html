@@ -44,8 +44,8 @@
   <div class="falt"><label>Från vem, producent</label><input type="text" name="lamnare_namn" value="{{ varden.lamnare_namn }}"></div>
   <div class="falt"><label>Producentens org.nr om känt</label><input type="text" name="lamnare_orgnr" value="{{ varden.lamnare_orgnr }}"></div>
   <div class="falt bred"><label>Från vilken plats, adress eller vägbeskrivning</label><input type="text" name="fran_adress" value="{{ varden.fran_adress }}"></div>
-  <div class="falt"><label>Koordinat, lat och long, om adress saknas</label><input type="text" name="fran_koordinat" id="fran_koordinat" value="{{ varden.fran_koordinat }}" data-url="{{ url_for('app.kommun_json') }}"></div>
-  <div class="falt"><label>Kommun där avfallet hämtades, sätts från koordinaten om den lämnas tom</label><input type="text" name="fran_kommun" id="fran_kommun" list="kommuner" value="{{ varden.fran_kommun }}"></div>
+  <div class="falt"><label>Koordinat, lat och long, om adress saknas</label><input type="text" name="fran_koordinat" value="{{ varden.fran_koordinat }}"></div>
+  <div class="falt"><label>Kommun där avfallet hämtades</label><input type="text" name="fran_kommun" list="kommuner" value="{{ varden.fran_kommun }}"></div>
   <div class="falt"><label>Fordon, reg.nr</label><input type="text" name="fordon" value="{{ varden.fordon }}"></div>
   <div class="falt"><label>Förare</label><input type="text" name="forare" value="{{ varden.forare }}"></div>
 {% endif %}
