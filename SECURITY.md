@@ -1,5 +1,5 @@
-# Security
+# Säkerhet
 
-If you find a security problem in avfallsanteckning, report it privately: open the Security tab of this repository and use "Report a vulnerability". Please keep it out of the issue tracker until there is a fix.
+Hittar du ett säkerhetsproblem i avfallsanteckning, rapportera det privat: gå till fliken Security i det här repot och välj "Report a vulnerability". Lägg det inte i ett publikt ärende förrän det finns en rättning.
 
-I read reports there and reply in the advisory. A fix goes out as a new version and the advisory is published with it. Only the latest version gets fixes.
+Jag läser rapporterna där och svarar i advisoryn. En rättning går ut som en ny release och advisoryn publiceras med den. Bara den senaste releasen får rättningar.
