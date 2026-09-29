@@ -76,14 +76,13 @@ reverse proxy med inloggning.
 Allt som är eget för verksamheten skrivs in under Inställningar i appen
 och sparas i databasen:
 
-- **Verksamhet**: namn, org.nr, adress, kommun, CFAR-nummer och
-  kontaktadress. CFAR-numret är arbetsställets nummer hos SCB och krävs i
+- **Verksamhet**: namn, org.nr, adress, CFAR-nummer och kontaktadress. CFAR-numret är arbetsställets nummer hos SCB och krävs i
   producentrapporter. Kontaktadressen skrivs ut på blanketten som den
   adress dit den fotograferade blanketten ska mejlas.
 - **Logotyp** i sidhuvudet. Utan logotyp visas verksamhetens namn.
 - **Arbetsställen** att välja bland där avfallet producerats, med varsitt
   CFAR-nummer. Utan egna arbetsställen används verksamhetens adress och
-  CFAR-nummer.
+  CFAR-nummer, och postorten räknas som kommun när den är en.
 - **Vanliga avfallskoder**, som ligger överst i kodväljaren.
 - **Transportör**: slår på anteckningar som transportör och den tomma
   blanketten, för verksamheter som själva transporterar farligt avfall.

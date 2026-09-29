@@ -161,11 +161,10 @@ def _formkontext(conn, roll):
 
 
 def _standardvarden(roll):
-    v = inst()["verksamhet"]
     varden = {
         "transportdatum": idag().isoformat(),
         "transportsatt": TRANSPORTSATT[0],
-        "fran_kommun": v["kommun"],
+        "fran_kommun": "",
         "klassgrund": [],
     }
     if roll == "producent":

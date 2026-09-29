@@ -15,7 +15,6 @@ INSTALLNINGAR = {
     "adress": "Testvägen 1",
     "postnummer": "117 55",
     "ort": "Stockholm",
-    "kommun": "Stockholm",
     "cfar": "12345678",
     "kontakt": "miljo@testbolaget.se",
     "koder": "13 02 08*, 16 01 07*",
@@ -207,6 +206,13 @@ class ArbetsstalleTest(AppCase):
         text = self.klient.get("/ny/producent").data.decode()
         self.assertIn('<option value="0" selected>Testbolaget AB, Testvägen 1, 117 55 Stockholm (CFAR 12345678)', text)
         self.assertNotIn('<option value="1"', text)
+        aid = self.skapa("producent", PRODUCENT)
+        self.assertIn("Stockholm (0180)", self.klient.get(f"/anteckning/{aid}").data.decode())
+        self.installningar({**INSTALLNINGAR, "ort": "Skogås", "stalle_namn": []})
+        aid = self.skapa("producent", PRODUCENT)
+        text = self.klient.get(f"/anteckning/{aid}").data.decode()
+        self.assertIn("Skogås", text)
+        self.assertNotIn("(0", text.split("Var avfallet producerats")[1].split("</tr>")[0])
 
     def test_gammal_databas_far_kolumnen(self):
         from avfallsanteckning import db
@@ -351,8 +357,9 @@ class InstallningarTest(AppCase):
         self.assertIn(b"miljo@testbolaget.se", pdf)
 
     def test_validering(self):
-        data = {**INSTALLNINGAR, "namn": "", "kommun": "Atlantis", "koder": "13 02 08*, 99 99 99"}
+        data = {**INSTALLNINGAR, "namn": "", "koder": "13 02 08*, 99 99 99"}
         data["stalle_namn"] = ["", "Depån"]
+        data["stalle_kommun"] = ["Atlantis", "Nacka"]
         svar = self.klient.post("/installningar", data=data)
         text = svar.data.decode()
         self.assertEqual(svar.status_code, 200)

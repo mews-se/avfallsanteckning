@@ -9,7 +9,6 @@ STANDARD = {
         "adress": "",
         "postnummer": "",
         "ort": "",
-        "kommun": "",
         "cfar": "",
         "kontakt": "",
     },
@@ -24,14 +23,14 @@ def las(conn, kommuner):
     sparat = db.installningar(conn)
     inst = {namn: {**standard, **sparat.get(namn, {})} for namn, standard in STANDARD.items()}
     v = inst["verksamhet"]
-    v["kommunkod"] = kommuner.kod(v["kommun"]) or ""
-    v["kommun"] = kommuner.namn(v["kommunkod"]) or v["kommun"]
     v["postort"] = f"{v['postnummer']} {v['ort']}".strip()
     v["adressrad"] = ", ".join(x for x in (v["adress"], v["postort"]) if x)
     stallen = [{**ARBETSSTALLE, **s} for s in sparat.get("arbetsstallen", [])]
     inst["egna_stallen"] = bool(stallen)
     if not stallen:
-        eget = {"namn": v["namn"], "adress": v["adressrad"], "kommun": v["kommun"], "cfar": v["cfar"]}
+        # postorten är oftast också kommunen; annars får platsen ingen kommun
+        kommun = v["ort"] if kommuner.kod(v["ort"]) else ""
+        eget = {"namn": v["namn"], "adress": v["adressrad"], "kommun": kommun, "cfar": v["cfar"]}
         stallen = [{**ARBETSSTALLE, **eget}]
     for s in stallen:
         s["kommunkod"] = kommuner.kod(s["kommun"]) or ""
@@ -50,8 +49,6 @@ def tolka(form, kommuner, koder):
         fel.append(f"Ogiltigt org.nr: {v['orgnr']}.")
     elif v["orgnr"]:
         v["orgnr"] = orgnr.formatera(v["orgnr"])
-    if v["kommun"] and not kommuner.kod(v["kommun"]):
-        fel.append(f"Okänd kommun: {v['kommun']}.")
     favoriter = []
     for text in re.split(r"[,;\n]", form.get("koder", "")):
         if not text.strip():
