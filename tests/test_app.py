@@ -344,6 +344,7 @@ class InstallningarTest(AppCase):
         self.assertIn('value="Depåvägen 2, 131 54 Nacka"', text)
         self.assertIn("Spill av olja eller kemikalier\nOsäker bedömning", text)
         self.assertIn('name="aktiv" value="1" checked', text)
+        self.assertIn('href="https://cfarnrsok.scb.se/"', text)
         self.assertIn("Testbolaget AB</span>", self.klient.get("/").data.decode())
         pdf = pdf_text(self.klient.get("/transportdokument.pdf").data)
         self.assertIn(b"Org.nr 556000-0001", pdf)
@@ -401,6 +402,7 @@ class ParterTest(AppCase):
         text = self.klient.get("/parter").data.decode()
         self.assertIn("Ragnvald AB", text)
         self.assertIn('value="556333-3334"', text)
+        self.assertIn("foretagsinfo.bolagsverket.se", text)
         self.assertIn('value="Göteborg"', text)
         pid = text.split('name="id" value="')[1].split('"')[0]
         data = {**PRODUCENT, "mottagare_id": pid, "mottagare_namn": "", "till_adress": "", "till_kommun": ""}

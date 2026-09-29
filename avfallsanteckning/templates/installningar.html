@@ -12,7 +12,7 @@
   <div class="falt"><label>Postnummer</label><input type="text" name="postnummer" value="{{ varden.postnummer }}"></div>
   <div class="falt"><label>Ort</label><input type="text" name="ort" value="{{ varden.ort }}"></div>
   <div class="falt"><label>Kommun</label><input type="text" name="kommun" list="kommuner" value="{{ varden.kommun }}"></div>
-  <div class="falt"><label>CFAR-nummer, arbetsställets nummer hos SCB</label><input type="text" name="cfar" value="{{ varden.cfar }}"></div>
+  <div class="falt"><label>CFAR-nummer, arbetsställets nummer hos SCB, <a href="https://cfarnrsok.scb.se/" target="_blank" rel="noopener">slå upp på org.nr</a></label><input type="text" name="cfar" value="{{ varden.cfar }}"></div>
   <div class="falt bred"><label>Kontakt, e-postadress som skrivs ut på blanketten</label><input type="text" name="kontakt" value="{{ varden.kontakt }}"></div>
 </fieldset>
 
@@ -37,7 +37,7 @@
       <td><input type="text" name="stalle_cfar" value="{{ s.cfar }}"></td>
     </tr>{% endfor %}
     </tbody></table>
-    <label>Tomma rader hoppas över. Spara för att få fler rader.</label>
+    <label>Tomma rader hoppas över. Spara för att få fler rader. Arbetsställenas CFAR-nummer finns hos <a href="https://cfarnrsok.scb.se/" target="_blank" rel="noopener">SCB</a>.</label>
   </div>
 </fieldset>
 

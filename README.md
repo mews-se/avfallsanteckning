@@ -93,6 +93,11 @@ och sparas i databasen:
   för att avfallet bedömts som farligt, på blanketten och i
   transportörsanteckningen.
 
+Org.nr kontrolleras mot kontrollsiffran och sparas som 556xxx-xxxx, på
+Inställningar, på Parter och i anteckningarna. Vid fälten finns länkar
+till SCB:s sökning av arbetsställen med CFAR-nummer och till
+Bolagsverkets företagssökning. Båda är fria att använda.
+
 ## Avfallskoder och kommuner
 
 `avfallsanteckning/data/avfallskoder.json` byggs av `tools/avfallskoder.py`
