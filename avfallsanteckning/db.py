@@ -172,7 +172,7 @@ def lista(conn, ar=None, roll=None, status=None):
         param.append(status)
     return conn.execute(
         f"SELECT * FROM anteckning WHERE {' AND '.join(villkor)}"
-        " ORDER BY transportdatum DESC, id DESC",
+        " ORDER BY transportdatum DESC, lopnr",
         param,
     ).fetchall()
 

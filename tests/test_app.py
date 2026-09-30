@@ -158,6 +158,14 @@ class FormularTest(AppCase):
         self.assertIn("Testbolaget AB", text)
         self.assertIn("Osäker bedömning", text)
 
+    def test_listan_sorteras_pa_datum_och_lopnr(self):
+        self.skapa("producent", PRODUCENT)
+        self.skapa("producent", PRODUCENT)
+        self.skapa("producent", {**PRODUCENT, "transportdatum": "2026-10-05"})
+        text = self.klient.get("/").data.decode().split("<tbody>")[1]
+        self.assertLess(text.index("2026-0003"), text.index("2026-0001"))
+        self.assertLess(text.index("2026-0001"), text.index("2026-0002"))
+
     def test_icke_farligt_har_ingen_frist(self):
         aid = self.skapa("producent", {**PRODUCENT, "avfallskod": "20 03 01"})
         text = self.klient.get(f"/anteckning/{aid}").data.decode()
