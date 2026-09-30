@@ -29,9 +29,9 @@ INSTALLNINGAR = {
 }
 
 PRODUCENT = {
-    "avfallskod": "13 02 08*",
-    "vikt_kg": "120,5",
-    "vikt_uppskattad": "1",
+    "avfallskod-1": "13 02 08*",
+    "vikt_kg-1": "120,5",
+    "vikt_uppskattad-1": "1",
     "transportdatum": "2026-10-01",
     "transportsatt": "Vägtransport",
     "arbetsstalle": "0",
@@ -48,8 +48,8 @@ PRODUCENT = {
 }
 
 TRANSPORTOR = {
-    "avfallskod": "15 02 02*",
-    "vikt_kg": "40",
+    "avfallskod-1": "15 02 02*",
+    "vikt_kg-1": "40",
     "transportdatum": "2026-10-02",
     "transportsatt": "Vägtransport",
     "lamnare_namn": "",
@@ -120,7 +120,7 @@ class FormularTest(AppCase):
         self.assertIn("Mottagning AB", lista)
 
     def test_validering(self):
-        svar = self.klient.post("/ny/producent", data={**PRODUCENT, "avfallskod": "99 99 99", "vikt_kg": "0"})
+        svar = self.klient.post("/ny/producent", data={**PRODUCENT, "avfallskod-1": "99 99 99", "vikt_kg-1": "0"})
         text = svar.data.decode()
         self.assertEqual(svar.status_code, 200)
         self.assertIn("Välj en avfallskod", text)
@@ -167,7 +167,7 @@ class FormularTest(AppCase):
         self.assertLess(text.index("2026-0001"), text.index("2026-0002"))
 
     def test_icke_farligt_har_ingen_frist(self):
-        aid = self.skapa("producent", {**PRODUCENT, "avfallskod": "20 03 01"})
+        aid = self.skapa("producent", {**PRODUCENT, "avfallskod-1": "20 03 01"})
         text = self.klient.get(f"/anteckning/{aid}").data.decode()
         self.assertIn("rapporteras inte", text)
 
@@ -239,6 +239,49 @@ class ArbetsstalleTest(AppCase):
         conn.close()
 
 
+class AvfallTest(AppCase):
+    def test_flera_avfall_blir_flera_anteckningar(self):
+        data = {**PRODUCENT, "avfallskod-2": "16 01 07*", "vikt_kg-2": "98", "avfallskod-7": "", "vikt_kg-7": ""}
+        svar = self.klient.post("/ny/producent", data=data, follow_redirects=True)
+        text = svar.data.decode()
+        self.assertIn("Anteckningar 2026-0001 och 2026-0002 sparade, en per avfallstyp.", text)
+        self.assertIn("13 02 08*", text)
+        self.assertNotIn("16 01 07*", text)
+        text = self.klient.get("/anteckning/2").data.decode()
+        self.assertIn("2026-0002", text)
+        self.assertIn("16 01 07*", text)
+        self.assertIn("98 kg", text)
+        self.assertIn("Order 4711", text)
+        lista = self.klient.get("/").data.decode().split("<tbody>")[1]
+        self.assertIn("2026-0001", lista)
+        self.assertIn("2026-0002", lista)
+        csv = self.klient.get("/export.csv?ar=2026").data.decode("utf-8-sig").splitlines()
+        self.assertEqual(len(csv), 3)
+        self.assertTrue(csv[2].startswith("2026-0002;antecknad;"))
+        self.assertIn(";16 01 07*;", csv[2])
+        pdf = pdf_text(self.klient.get("/anteckning/2/anteckning.pdf").data)
+        self.assertIn(b"Oljefilter", pdf)
+        text = self.klient.get("/anteckning/1/redigera").data.decode()
+        self.assertIn('name="avfallskod-1" value="13 02 08*"', text)
+        self.assertIn('name="vikt_kg-1" value="120,5"', text)
+        self.assertNotIn("Lägg till avfall", text)
+        svar = self.klient.post("/anteckning/1/redigera", data=data)
+        self.assertIn("En anteckning gäller ett avfall", svar.data.decode())
+
+    def test_farligt_per_anteckning(self):
+        data = {**PRODUCENT, "avfallskod-1": "20 03 01", "avfallskod-2": "13 02 08*", "vikt_kg-2": "5"}
+        self.klient.post("/ny/producent", data=data)
+        self.assertIn("rapporteras inte", self.klient.get("/anteckning/1").data.decode())
+        self.assertIn("Rapportera senast", self.klient.get("/anteckning/2").data.decode())
+        self.assertEqual(json.loads(self.klient.get("/api/forfallna").data)["att_rapportera"], 1)
+
+    def test_minst_ett_avfall(self):
+        svar = self.klient.post("/ny/producent", data={**PRODUCENT, "avfallskod-1": "", "vikt_kg-1": ""})
+        self.assertIn("minst ett avfall", svar.data.decode())
+        svar = self.klient.post("/ny/producent", data={**PRODUCENT, "avfallskod-2": "16 01 07*", "vikt_kg-2": ""})
+        self.assertIn("för avfall 2", svar.data.decode())
+
+
 class StatusTest(AppCase):
     def test_rapportering_och_aterta(self):
         aid = self.skapa("producent", PRODUCENT)
@@ -265,7 +308,7 @@ class StatusTest(AppCase):
     def test_rattning_efter_rapportering_loggas(self):
         aid = self.skapa("producent", PRODUCENT)
         self.klient.post(f"/anteckning/{aid}/status", data={"handling": "rapporterad"})
-        self.klient.post(f"/anteckning/{aid}/redigera", data={**PRODUCENT, "vikt_kg": "130"})
+        self.klient.post(f"/anteckning/{aid}/redigera", data={**PRODUCENT, "vikt_kg-1": "130"})
         text = self.klient.get(f"/anteckning/{aid}").data.decode()
         self.assertIn("130 kg", text)
         self.assertIn("rättad", text)

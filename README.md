@@ -43,7 +43,9 @@ rapporten lämnad i tid ligger hos verksamheten.
 - **Anteckning som producent** (6 kap. 1 §): arbetsstället väljs ur en
   lista och dess adress, kommun och CFAR-nummer följer med in i
   anteckningen. Transportör och mottagare väljs bland sparade parter eller
-  skrivs in.
+  skrivs in. En transport med flera avfallstyper skrivs in på en gång, med
+  kod och vikt per rad, och blir en anteckning per typ med varsitt
+  löpnummer, som rapporterna i e-tjänsten.
 - **Anteckning som transportör** (6 kap. 2 §), för verksamheter som själva
   kör farligt avfall: från vem och vilken plats, med adress eller koordinat,
   producenten kan vara okänd, och grunden för att avfallet bedömts som

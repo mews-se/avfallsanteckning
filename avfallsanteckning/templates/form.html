@@ -1,24 +1,36 @@
 {% extends "base.html" %}
 {% block titel %}{% if aid %}Redigera {{ varden.lopnr }}{% else %}Ny anteckning{% endif %} · Avfallsanteckning{% endblock %}
+{% macro avfallsrad(n, a) %}
+<div class="avfallsrad" data-n="{{ n }}">
+  <div class="radhuvud"><b>Avfall <span class="nr">{{ n }}</span></b><button type="button" class="sekundar ta_bort">Ta bort</button></div>
+  <div class="falt kodvaljare">
+    <label>Avfallskod enligt bilaga 3</label>
+    <div class="kodvalt">{% if a.avfallskod %}<b class="mono">{{ a.avfallskod }}</b> {{ a.avfallstyp }}{% else %}<span class="tom">Ingen kod vald</span>{% endif %}</div>
+    <input type="hidden" name="avfallskod-{{ n }}" value="{{ a.avfallskod or '' }}">
+    <input type="text" class="kodsok" placeholder="Sök på kod eller ord, t.ex. 13 02 eller spillolja">
+    <ul class="kodlista" hidden></ul>
+  </div>
+  <div class="falt">
+    <label>Vikt i kilogram</label>
+    <input type="text" inputmode="decimal" name="vikt_kg-{{ n }}" value="{{ a.vikt_kg or '' }}">
+    <label class="rad"><input type="checkbox" name="vikt_uppskattad-{{ n }}" value="1"{% if a.vikt_uppskattad %} checked{% endif %}> uppskattad, rättas efter mottagarens vägning</label>
+  </div>
+</div>
+{% endmacro %}
 {% block innehall %}
 <h2>{% if aid %}Redigera anteckning {{ varden.lopnr }}{% else %}Ny anteckning{% endif %} <span class="roll">{{ ROLLER[roll] }}</span></h2>
-<p class="hjalp">{{ hjalp }} {{ GRUND[roll] }}. Anteckningen ska vara förd innan transporten påbörjas och rapporteras till <a href="https://www.naturvardsverket.se/vagledning-och-stod/avfall-farligt-avfall/avfallsregistret/" target="_blank" rel="noopener">Naturvårdsverkets avfallsregister</a> senast två arbetsdagar efter transportdatumet.</p>
+<p class="hjalp">{{ hjalp }} {{ GRUND[roll] }}. Anteckningen ska vara förd innan transporten påbörjas och rapporteras till <a href="https://www.naturvardsverket.se/vagledning-och-stod/avfall-farligt-avfall/avfallsregistret/" target="_blank" rel="noopener">Naturvårdsverkets avfallsregister</a> senast två arbetsdagar efter transportdatumet.{% if not aid %} En transport med flera avfallstyper skrivs in med en rad per typ och blir en anteckning per typ, med varsitt löpnummer, som rapporterna i e-tjänsten.{% endif %}</p>
 <form method="post" class="panel formular" autocomplete="off">
 <fieldset>
   <legend>Avfall</legend>
-  <div class="falt bred kodvaljare">
-    <label for="kodsok">Avfallskod enligt bilaga 3</label>
-    <div class="kodvalt" id="kodvalt">{% if varden.avfallskod %}<b class="mono">{{ varden.avfallskod }}</b> {{ varden.avfallstyp }}{% else %}<span class="tom">Ingen kod vald</span>{% endif %}</div>
-    <input type="hidden" name="avfallskod" id="avfallskod" value="{{ varden.avfallskod or '' }}">
-    <input type="text" id="kodsok" placeholder="Sök på kod eller ord, t.ex. 13 02 eller spillolja" data-url="{{ url_for('app.koder_json') }}" data-favoriter='{{ favoriter }}'>
-    <ul class="kodlista" id="kodlista" hidden></ul>
-    <label class="rad"><input type="checkbox" id="visa_ickefarliga"> visa även icke-farliga koder</label>
+  <div class="falt bred"><label class="rad"><input type="checkbox" id="visa_ickefarliga"> visa även icke-farliga koder</label></div>
+  <div class="falt bred{% if aid %} ensam{% endif %}" id="avfallsrader" data-url="{{ url_for('app.koder_json') }}" data-favoriter='{{ favoriter }}'>
+    {% for a in varden.avfall or [{}] %}{{ avfallsrad(loop.index, a) }}{% endfor %}
   </div>
-  <div class="falt">
-    <label for="vikt_kg">Vikt i kilogram</label>
-    <input type="text" inputmode="decimal" name="vikt_kg" id="vikt_kg" value="{{ varden.vikt_kg or '' }}" required>
-    <label class="rad"><input type="checkbox" name="vikt_uppskattad" value="1"{% if varden.vikt_uppskattad %} checked{% endif %}> uppskattad, rättas efter mottagarens vägning</label>
-  </div>
+{% if not aid %}
+  <div class="falt bred"><button type="button" class="sekundar" id="lagg_till_avfall">Lägg till avfall</button></div>
+  <template id="avfallsrad-mall">{{ avfallsrad('__N__', {}) }}</template>
+{% endif %}
 </fieldset>
 
 <fieldset>

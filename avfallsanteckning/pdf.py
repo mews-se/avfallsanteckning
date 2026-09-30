@@ -136,18 +136,44 @@ def _plats(adress, kommun="", koordinat="", cfar=""):
     return " · ".join(x for x in delar if x)
 
 
-def _avfall(p):
-    return f"{p['avfallskod']} {p['avfallstyp']}"
+def _avfallstabell(rader, tom=False):
+    data = [[Paragraph(t, ETIKETT) for t in ("Avfallskod", "Avfallstyp", "Farligt avfall", "Vikt")]]
+    for a in rader:
+        data.append(
+            [
+                Paragraph(_t(a["avfallskod"]), TEXT),
+                Paragraph(_t(a["avfallstyp"]), TEXT),
+                Paragraph("Ja" if a["farligt"] else "Nej", TEXT),
+                Paragraph(_t(_vikt(a)), TEXT),
+            ]
+        )
+    if tom:
+        data += [["", "", "", ""] for _ in range(3)]
+    t = Table(
+        data,
+        colWidths=[26 * mm, BREDD - 78 * mm, 24 * mm, 28 * mm],
+        rowHeights=[None, *[10 * mm] * 3] if tom else None,
+    )
+    t.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE" if tom else "TOP"),
+                ("LINEBELOW", (0, 0), (-1, -1), 0.4, LINJE),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                ("TOPPADDING", (0, 0), (-1, -1), 3),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            ]
+        )
+    )
+    return t
 
 
 def anteckning(p, inst, bilagor=(), historik=()):
     farligt = bool(p["farligt"])
     titel = "Anteckning om farligt avfall" if farligt else "Anteckning om avfall"
     under = f"{GRUND[p['roll']]} · {ROLLER[p['roll']]} · Löpnr {p['lopnr']}"
-    delar = [
-        Paragraph("Avfall", AVSNITT),
-        _tabell([("Avfallstyp", _avfall(p)), ("Farligt avfall", "Ja" if farligt else "Nej"), ("Vikt", _vikt(p))]),
-    ]
+    delar = [Paragraph("Avfall", AVSNITT), _avfallstabell([p])]
     if p["roll"] == "producent":
         rader = [
             ("Var avfallet producerats", _plats(p["fran_adress"], _kommun(p, "fran"), cfar=p["fran_cfar"])),
@@ -194,8 +220,6 @@ def anteckning(p, inst, bilagor=(), historik=()):
 
 def _transportrader(p):
     return [
-        ("Avfallstyp", _avfall(p) if p else ""),
-        ("Vikt i kilogram", _vikt(p) if p else ""),
         ("Datum för transporten", p["transportdatum"] if p else ""),
         ("Ursprunglig plats", _plats(p["fran_adress"], _kommun(p, "fran"), p["fran_koordinat"]) if p else ""),
         ("Slutlig plats", _plats(p["till_adress"], _kommun(p, "till")) if p else ""),
@@ -207,7 +231,12 @@ def _transportrader(p):
 
 def transportdokument(p, inst):
     under = f"6 kap. 19 § avfallsförordningen (2020:614) · Löpnr {p['lopnr']}"
-    delar = [Paragraph("Transporten", AVSNITT), _tabell(_transportrader(p))]
+    delar = [
+        Paragraph("Avfall", AVSNITT),
+        _avfallstabell([p]),
+        Paragraph("Transporten", AVSNITT),
+        _tabell(_transportrader(p)),
+    ]
     if p["fordon"] or p["forare"]:
         delar.append(_tabell([("Fordon", p["fordon"]), ("Förare", p["forare"])]))
     # vid okänd producent finns ingen som kan skriva under för den sidan
@@ -219,11 +248,16 @@ def transportdokument(p, inst):
 def blankett(inst):
     v, t = inst["verksamhet"], inst["transportor"]
     rader = _transportrader(None)
-    rader[5] = ("Transportör", _part(v["namn"], v["orgnr"]))
-    rader[6] = ("Producent", t["blankett_producent"])
-    rader.insert(7, ("Fordon och förare", ""))
+    rader[3] = ("Transportör", _part(v["namn"], v["orgnr"]))
+    rader[4] = ("Producent", t["blankett_producent"])
+    rader.insert(5, ("Fordon och förare", ""))
     rader.append(("Referens, händelse eller uppdrag", ""))
-    delar = [Paragraph("Transporten", AVSNITT), _tabell(rader, tom=True)]
+    delar = [
+        Paragraph("Avfall", AVSNITT),
+        _avfallstabell([], tom=True),
+        Paragraph("Transporten", AVSNITT),
+        _tabell(rader, tom=True),
+    ]
     if t["bedomningsgrunder"]:
         kryss = "<br/>".join(f"[  ] {_t(g)}" for g in t["bedomningsgrunder"])
         delar += [

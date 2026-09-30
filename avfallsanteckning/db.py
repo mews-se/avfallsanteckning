@@ -78,6 +78,8 @@ FALT = (
     "fordon", "forare", "referens", "notering",
 )
 
+AVFALLSFALT = ("avfallskod", "avfallstyp", "farligt", "vikt_kg", "vikt_uppskattad")
+
 PARTFALT = ("namn", "orgnr", "adress", "kommunkod", "roll", "aktiv")
 
 

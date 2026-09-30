@@ -31,7 +31,7 @@ bp = Blueprint("app", __name__)
 BILAGA_TYPER = {"pdf", "jpg", "jpeg", "png", "heic", "webp"}
 VECKODAG = ["mån", "tis", "ons", "tor", "fre", "lör", "sön"]
 MANAD = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
-KOPIERAS_EJ = {"avfallskod", "avfallstyp", "farligt", "vikt_kg", "vikt_uppskattad", "notering"}
+KOPIERAS_EJ = {"avfall", *db.AVFALLSFALT, "notering"}
 LOGOTYPER = ("logo.png", "logo.svg", "logo.jpg", "logo.webp")
 LOGOTYP_TYPER = {"png": "logo.png", "svg": "logo.svg", "jpg": "logo.jpg", "jpeg": "logo.jpg", "webp": "logo.webp"}
 
@@ -166,6 +166,7 @@ def _standardvarden(roll):
         "transportsatt": TRANSPORTSATT[0],
         "fran_kommun": "",
         "klassgrund": [],
+        "avfall": [],
     }
     if roll == "producent":
         s = inst()["arbetsstallen"][0]
@@ -188,16 +189,32 @@ def _arbetsstalleindex(rad):
     return ""
 
 
+def _radnummer(form):
+    return sorted(int(k.removeprefix("avfallskod-")) for k in form if k.removeprefix("avfallskod-").isdigit())
+
+
 def _formvarden(form):
     varden = {k: form.get(k, "") for k in form}
     varden["klassgrund"] = form.getlist("klassgrund")
+    koder = current_app.config["KODER"]
+    varden["avfall"] = []
+    for n in _radnummer(form):
+        kod = koder.get(form.get(f"avfallskod-{n}", ""))
+        varden["avfall"].append(
+            {
+                "avfallskod": kod["kod"] if kod else "",
+                "avfallstyp": kod["beskrivning"] if kod else "",
+                "vikt_kg": form.get(f"vikt_kg-{n}", ""),
+                "vikt_uppskattad": bool(form.get(f"vikt_uppskattad-{n}")),
+            }
+        )
     return varden
 
 
 def _radvarden(rad):
     varden = dict(rad)
     varden["klassgrund"] = json.loads(rad["klassgrund"] or "[]")
-    varden["vikt_kg"] = f_vikt(rad["vikt_kg"])
+    varden["avfall"] = [{**{f: rad[f] for f in db.AVFALLSFALT}, "vikt_kg": f_vikt(rad["vikt_kg"])}]
     varden["fran_kommun"] = f_kommunnamn(rad["fran_kommunkod"])
     varden["till_kommun"] = f_kommunnamn(rad["till_kommunkod"])
     if rad["roll"] == "producent":
@@ -228,15 +245,39 @@ def _part(form, prefix, conn):
     return form.get(f"{prefix}_namn", "").strip(), form.get(f"{prefix}_orgnr", "").strip(), "", ""
 
 
-def _las_formular(roll, form, conn):
+def _las_avfall(form, fel):
+    koder = current_app.config["KODER"]
+    rader = []
+    for n in _radnummer(form):
+        text, vikt = form.get(f"avfallskod-{n}", ""), form.get(f"vikt_kg-{n}", "")
+        if not text and not vikt.strip():
+            continue
+        kod = koder.get(text)
+        kg = _tal(vikt)
+        if not kod:
+            fel.append(f"Välj en avfallskod ur listan för avfall {len(rader) + 1}.")
+        if kg is None or kg <= 0:
+            fel.append(f"Ange vikt i kilogram, större än 0, för avfall {len(rader) + 1}.")
+        rader.append(
+            {
+                "avfallskod": kod["kod"] if kod else "",
+                "avfallstyp": kod["beskrivning"] if kod else "",
+                "farligt": int(bool(kod and kod["farligt"])),
+                "vikt_kg": kg or 0,
+                "vikt_uppskattad": int(bool(form.get(f"vikt_uppskattad-{n}"))),
+            }
+        )
+    if not rader:
+        fel.append("Lägg till minst ett avfall.")
+    return rader
+
+
+def _las_formular(roll, form, conn, en=False):
     fel = []
     v = inst()["verksamhet"]
-    kod = current_app.config["KODER"].get(form.get("avfallskod", ""))
-    if not kod:
-        fel.append("Välj en avfallskod ur listan.")
-    vikt = _tal(form.get("vikt_kg", ""))
-    if vikt is None or vikt <= 0:
-        fel.append("Ange vikt i kilogram, större än 0.")
+    avfall = _las_avfall(form, fel)
+    if en and len(avfall) > 1:
+        fel.append("En anteckning gäller ett avfall. Lägg till fler avfallstyper som nya anteckningar.")
     datum = _datum(form.get("transportdatum", ""))
     if not datum:
         fel.append("Ange transportdatum.")
@@ -249,11 +290,7 @@ def _las_formular(roll, form, conn):
     data = {
         **text,
         "roll": roll,
-        "avfallskod": kod["kod"] if kod else "",
-        "avfallstyp": kod["beskrivning"] if kod else "",
-        "farligt": int(bool(kod and kod["farligt"])),
-        "vikt_kg": vikt or 0,
-        "vikt_uppskattad": int(bool(form.get("vikt_uppskattad"))),
+        "farligt": int(any(a["farligt"] for a in avfall)),
         "transportdatum": datum or "",
         "transportsatt": transportsatt,
         "klassgrund": json.dumps(klassgrund),
@@ -301,7 +338,8 @@ def _las_formular(roll, form, conn):
             data[k] = orgnr.formatera(data[k])
         elif data[k] and k in form:
             fel.append(f"Ogiltigt org.nr: {data[k]}.")
-    return data, fel
+    # en anteckning per avfallstyp, som rapporterna i avfallsregistret
+    return [{**data, **a} for a in avfall], fel
 
 
 @bp.route("/ny/<roll>", methods=["GET", "POST"])
@@ -310,11 +348,16 @@ def ny(roll):
         abort(404)
     conn = get_db()
     if request.method == "POST":
-        data, fel = _las_formular(roll, request.form, conn)
+        rader, fel = _las_formular(roll, request.form, conn)
         if not fel:
-            aid = db.skapa(conn, data, av=request.form.get("av", "").strip())
-            flash(f"Anteckning {db.hamta(conn, aid)['lopnr']} sparad.")
-            return redirect(url_for("app.visa", aid=aid))
+            av = request.form.get("av", "").strip()
+            aid = [db.skapa(conn, data, av=av) for data in rader]
+            lopnr = [db.hamta(conn, a)["lopnr"] for a in aid]
+            if len(lopnr) == 1:
+                flash(f"Anteckning {lopnr[0]} sparad.")
+            else:
+                flash(f"Anteckningar {', '.join(lopnr[:-1])} och {lopnr[-1]} sparade, en per avfallstyp.")
+            return redirect(url_for("app.visa", aid=aid[0]))
         for f in fel:
             flash(f, "fel")
         varden = _formvarden(request.form)
@@ -335,10 +378,10 @@ def redigera(aid):
         return redirect(url_for("app.visa", aid=aid))
     roll = rad["roll"]
     if request.method == "POST":
-        data, fel = _las_formular(roll, request.form, conn)
+        rader, fel = _las_formular(roll, request.form, conn, en=True)
         if not fel:
             handelse = "rättad" if rad["status"] == "rapporterad" else "ändrad"
-            db.uppdatera(conn, aid, data, handelse, av=request.form.get("av", "").strip())
+            db.uppdatera(conn, aid, rader[0], handelse, av=request.form.get("av", "").strip())
             if handelse == "rättad":
                 flash("Anteckningen är rättad. Rätta uppgifterna även i Naturvårdsverkets e-tjänst.", "varning")
             else:
