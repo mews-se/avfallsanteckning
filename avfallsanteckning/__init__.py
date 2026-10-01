@@ -6,7 +6,7 @@ from flask import Flask
 
 from . import db, koder, kommuner
 
-__version__ = "1.1"
+__version__ = "1.2"
 
 
 def create_app(data_dir=None):
