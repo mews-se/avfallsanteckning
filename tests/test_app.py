@@ -8,6 +8,7 @@ import zlib
 from pathlib import Path
 
 from avfallsanteckning import create_app
+from avfallsanteckning.installningar import STANDARD
 
 INSTALLNINGAR = {
     "namn": "Testbolaget AB",
@@ -78,6 +79,15 @@ def pdf_text(data):
             pass
         delar.append(del_)
     return b"".join(delar)
+
+
+def sidor(data):
+    return len(re.findall(rb"/Type /Page\b", data))
+
+
+def underskrifter(pdf):
+    # rubriken plus ett fält per undertecknare
+    return pdf.count(b"Underskrift") - 1
 
 
 class AppCase(unittest.TestCase):
@@ -377,7 +387,7 @@ class TransportorTest(AppCase):
         self.assertIn(b"upphittat", pdf)
         self.assertIn(b"hittats vid v", pdf)
         self.assertIn(b"Spill av olja", pdf)
-        self.assertEqual(pdf.count(b"Namnf"), 1)
+        self.assertEqual(underskrifter(pdf), 1)
         enkel = {k: v for k, v in INSTALLNINGAR.items() if not k.startswith(("blankett_", "bedomningsgrunder"))}
         self.installningar(enkel)
         self.assertNotIn("Grund för bedömningen", self.klient.get("/ny/transportor").data.decode())
@@ -386,7 +396,13 @@ class TransportorTest(AppCase):
         pdf = pdf_text(self.klient.get("/transportdokument.pdf").data)
         self.assertNotIn(b"upphittat", pdf)
         self.assertNotIn(b"Kryssa", pdf)
-        self.assertEqual(pdf.count(b"Namnf"), 2)
+        self.assertEqual(underskrifter(pdf), 2)
+
+    def test_blanketten_ryms_pa_en_sida(self):
+        grunder = "\n".join(STANDARD["transportor"]["bedomningsgrunder"])
+        for producent in ("Okänd, avfallet är upphittat", ""):
+            self.installningar({**INSTALLNINGAR, "blankett_producent": producent, "bedomningsgrunder": grunder})
+            self.assertEqual(sidor(self.klient.get("/transportdokument.pdf").data), 1)
 
 
 class InstallningarTest(AppCase):

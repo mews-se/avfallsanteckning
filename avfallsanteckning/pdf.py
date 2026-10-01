@@ -33,7 +33,8 @@ def _tabell(rader, tom=False):
     t = Table(
         data,
         colWidths=[52 * mm, BREDD - 52 * mm],
-        rowHeights=[10 * mm] * len(data) if tom else None,
+        # förtryckta rader behöver ingen skrivhöjd
+        rowHeights=[None if v else 10 * mm for _, v in rader] if tom else None,
     )
     t.setStyle(
         TableStyle(
@@ -50,35 +51,30 @@ def _tabell(rader, tom=False):
     return t
 
 
-def _signatur(rubrik):
-    rader = [
-        [Paragraph(f"<b>{_t(rubrik)}</b>", TEXT)],
-        [""],
-        [Paragraph("Underskrift", ETIKETT)],
-        [""],
-        [Paragraph("Namnförtydligande", ETIKETT)],
-        [""],
-        [Paragraph("Ort och datum", ETIKETT)],
+FALT = ("Underskrift", "Namnförtydligande", "Ort och datum")
+
+
+def _signatur(rubrik, falt):
+    rader = [[Paragraph(f"<b>{_t(rubrik)}</b>", TEXT)]]
+    hojder = [6 * mm]
+    stil = [
+        ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
     ]
-    hojder = [6 * mm, 11 * mm, 5 * mm, 9 * mm, 5 * mm, 9 * mm, 5 * mm]
+    for i, namn in enumerate(falt):
+        rader += [[""], [Paragraph(namn, ETIKETT)]]
+        hojder += [(11 if i == 0 else 9) * mm, 5 * mm]
+        stil.append(("LINEABOVE", (0, 2 * i + 2), (0, 2 * i + 2), 0.5, colors.black))
     t = Table(rader, colWidths=[BREDD / 2 - 8 * mm], rowHeights=hojder)
-    t.setStyle(
-        TableStyle(
-            [
-                ("LINEABOVE", (0, 2), (0, 2), 0.5, colors.black),
-                ("LINEABOVE", (0, 4), (0, 4), 0.5, colors.black),
-                ("LINEABOVE", (0, 6), (0, 6), 0.5, colors.black),
-                ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ]
-        )
-    )
+    t.setStyle(TableStyle(stil))
     return t
 
 
-def _underskrifter(producent=True):
-    block = [_signatur("Producent"), _signatur("Transportör")] if producent else [_signatur("Transportör"), ""]
+def _underskrifter(producent=True, falt=FALT):
+    block = [_signatur("Producent", falt), _signatur("Transportör", falt)]
+    if not producent:
+        block = [_signatur("Transportör", falt), ""]
     t = Table([block], colWidths=[BREDD / 2, BREDD / 2])
     t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0)]))
     rubrik = "Underskrifter" if producent else "Underskrift"
@@ -270,8 +266,8 @@ def blankett(inst):
             Spacer(1, 2 * mm),
             Paragraph(kryss, TEXT),
         ]
-    # en förtryckt producent har ingen som skriver under
-    delar.append(_underskrifter(producent=not t["blankett_producent"]))
+    # en förtryckt producent har ingen som skriver under; datum, fordon och förare står redan på blanketten
+    delar.append(_underskrifter(producent=not t["blankett_producent"], falt=("Underskrift",)))
     delar.append(Spacer(1, 4 * mm))
     if v["kontakt"]:
         instruktion = f"<b>Fotografera den ifyllda blanketten och mejla bilden omgående till {_t(v['kontakt'])}.</b>"
