@@ -270,7 +270,7 @@ def blankett(inst):
     delar.append(_underskrifter(producent=not t["blankett_producent"], falt=("Underskrift",)))
     delar.append(Spacer(1, 4 * mm))
     if v["kontakt"]:
-        instruktion = f"<b>Fotografera den ifyllda blanketten och mejla bilden omgående till {_t(v['kontakt'])}.</b>"
+        instruktion = f"<b>Fotografera den ifyllda blanketten och maila bilden omgående till {_t(v['kontakt'])}.</b>"
     else:
         instruktion = "Fotografera den ifyllda blanketten och lämna bilden till den som för anteckningarna samma dag."
     delar.append(

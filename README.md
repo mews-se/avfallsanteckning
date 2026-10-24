@@ -116,7 +116,7 @@ och sparas i databasen:
 - **Verksamhet**: namn, org.nr, adress, CFAR-nummer och kontaktadress.
   CFAR-numret är arbetsställets nummer hos SCB och krävs i
   producentrapporter. Kontaktadressen skrivs ut på blanketten som den
-  adress dit den fotograferade blanketten ska mejlas.
+  adress dit den fotograferade blanketten ska mailas.
 - **Logotyp** i sidhuvudet. Utan logotyp visas verksamhetens namn.
 - **Arbetsställen** att välja bland där avfallet producerats, med varsitt
   CFAR-nummer och kommun. Utan egna arbetsställen används verksamhetens
@@ -150,7 +150,7 @@ använda.
 
 För den som transporterar själv finns Ny: transportör och blanketten, som
 skrivs ut i förväg och fylls i för hand på plats. Fotografera den ifyllda
-blanketten och mejla den till kontaktadressen, så förs anteckningen in i
+blanketten och maila den till kontaktadressen, så förs anteckningen in i
 appen samma dag.
 
 ## Data och drift
