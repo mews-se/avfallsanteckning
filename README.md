@@ -53,21 +53,23 @@ rapporten lämnad i tid ligger hos verksamheten.
 - **Avfallskoder** ur bilaga 3 i en sökbar lista, med verksamhetens vanliga
   koder överst. Farliga koder är förvalda, icke-farliga kan visas. Listan
   bär både dagens lydelse och den som gäller från den 9 december 2026 och
-  väljer rätt lydelse efter datum.
+  byter till den nya lydelsen samma dag, utan omstart.
 - **Kommuner** anges med namn. SCB:s kommunlista sätter kommunkoden, som
   avfallsregistret vill ha när producenten är okänd.
 - **Tidsfrist**: transportdatum plus två arbetsdagar, med svenska helgdagar
-  och regeln om aftnar i lag (1930:173). Startsidan visar dagar kvar och
-  markerar det som är försenat.
+  och regeln om aftnar i lag (1930:173). Startsidan visar dagar kvar,
+  markerar det som är försenat och kan filtreras på år, roll och status.
 - **Status och historik**: antecknad, rapporterad med kvittens från
   e-tjänsten, makulerad med skäl. Ingenting raderas. Varje ändring loggas,
   och en ändring efter rapportering märks som rättning med en påminnelse om
-  att rätta även i e-tjänsten.
+  att rätta även i e-tjänsten. En rapportering som markerats av misstag kan
+  återtas.
 - **Dokument**: anteckningen som PDF, transportdokument enligt 6 kap. 19 §
   för en anteckning, och en tom blankett att ha i bilen eller på verkstaden
   med verksamheten förifylld som transportör.
 - **Bilagor**: foto på transportdokumentet och mottagarens kvitto per
-  anteckning, som PDF, JPG, PNG, HEIC eller WebP upp till 25 MB.
+  anteckning, som PDF, JPG, PNG, HEIC eller WebP, upp till 25 MB per
+  uppladdning.
 - **Parter**: återkommande transportörer och mottagare med org.nr, adress
   och kommun. Org.nr kontrolleras mot kontrollsiffran.
 - **Export** som CSV per år, och en JSON-adress för övervakning av
@@ -101,9 +103,10 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 AVFALLSANTECKNING_HOST=0.0.0.0 .venv/bin/python -m avfallsanteckning
 ```
 
-Miljövariabler: `AVFALLSANTECKNING_DATA` (standard `data`),
+Det startar Flasks utvecklingsserver, och bara den läser
 `AVFALLSANTECKNING_HOST` (standard `127.0.0.1`) och `AVFALLSANTECKNING_PORT`
-(standard `8400`).
+(standard `8400`). I bilden körs waitress på port 8400. Datakatalogen sätts
+med `AVFALLSANTECKNING_DATA` (standard `data`, i bilden `/data`).
 
 Appen har ingen inloggning. Kör den på det egna nätet eller bakom en
 reverse proxy med inloggning, och exponera den inte mot internet.
@@ -138,7 +141,8 @@ använda.
 
 1. **Anteckna innan transporten.** Ny: producent, välj arbetsställe,
    avfallskod, vikt, transportör och mottagare. Anteckningen får ett löpnummer
-   per år, som `2026-0001`, och kan skrivas ut som PDF.
+   per år, som `2026-0001`, och kan skrivas ut som PDF. Kopiera till ny på en
+   tidigare anteckning fyller i samma uppgifter i en ny.
 2. **Rapportera i e-tjänsten** inom två arbetsdagar. Anteckningssidan visar
    fristen och länkar till e-tjänsten. Uppgifterna förs över därifrån.
 3. **Markera som rapporterad** med kvittensen från e-tjänsten, datum och vem
@@ -159,7 +163,8 @@ appen samma dag.
 logotypen och en hemlighet för sessionerna. Det är hela tillståndet och det
 som ska säkerhetskopieras. Databasen är SQLite i WAL-läge, så kopiera den
 med `sqlite3 avfallsanteckning.db ".backup kopia.db"` eller med containern
-stoppad.
+stoppad. Bilden har inte `sqlite3`, så kommandot körs på värden, med sudo
+eftersom containern skriver filerna som root.
 
 Containern kör som root, och compose-filens `init: true` gör att `docker
 compose stop` avslutar den direkt. Bilden byggs om varje vecka så att basbilden
