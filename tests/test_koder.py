@@ -1,5 +1,6 @@
 import unittest
 from datetime import date
+from unittest.mock import patch
 
 from avfallsanteckning.koder import Koder, gallande, normalisera
 from tools.avfallskoder import tolka
@@ -100,3 +101,11 @@ class KoderTest(unittest.TestCase):
         self.assertIsNotNone(senare.get("19 02 13*"))
         self.assertIsNotNone(senare.get("10 09 03"))
         self.assertEqual(len({k["kod"] for k in senare.lista}), len(senare.lista))
+
+    def test_foljer_dagen(self):
+        koder = Koder.load()
+        with patch("avfallsanteckning.koder.idag", return_value=date(2026, 12, 8)):
+            self.assertIsNone(koder.get("19 02 13*"))
+        with patch("avfallsanteckning.koder.idag", return_value=date(2026, 12, 9)):
+            self.assertIsNotNone(koder.get("19 02 13*"))
+            self.assertIn("19 02 13*", {k["kod"] for k in koder.lista})

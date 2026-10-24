@@ -23,8 +23,9 @@ def gallande(alla, datum):
 class Koder:
     def __init__(self, alla, datum=None):
         self.alla = alla
-        self.lista = gallande(alla, datum or idag())
-        self.per_kod = {k["kod"]: k for k in self.lista}
+        # utan datum följer listan dagens datum, så en ny lydelse gäller från sin dag utan omstart
+        self.datum = datum
+        self._dag = None
 
     @classmethod
     def load(cls, datum=None):
@@ -32,6 +33,17 @@ class Koder:
         with fil.open(encoding="utf-8") as f:
             return cls(json.load(f), datum)
 
+    def _galler(self):
+        dag = self.datum or idag()
+        if dag != self._dag:
+            lista = gallande(self.alla, dag)
+            self._lista, self._per_kod, self._dag = lista, {k["kod"]: k for k in lista}, dag
+        return self._lista, self._per_kod
+
+    @property
+    def lista(self):
+        return self._galler()[0]
+
     def get(self, kod):
         n = normalisera(kod)
-        return self.per_kod.get(n) if n else None
+        return self._galler()[1].get(n) if n else None
